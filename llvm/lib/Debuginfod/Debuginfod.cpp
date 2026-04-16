@@ -321,7 +321,8 @@ Expected<std::string> getCachedOrDownloadArtifact(
     if (!PruningPolicyOrErr)
       return PruningPolicyOrErr.takeError();
 
-    auto ErrOrPruned = pruneCache(CacheDirectoryPath, *PruningPolicyOrErr);
+    Expected<bool> ErrOrPruned =
+        pruneCache(CacheDirectoryPath, *PruningPolicyOrErr);
     if (!ErrOrPruned)
       return ErrOrPruned.takeError();
 
