@@ -25,18 +25,18 @@ using namespace llvm;
 void OR1KSubtarget::anchor() { }
 
 OR1KSubtarget &OR1KSubtarget::initializeSubtargetDependencies(StringRef CPU, StringRef FS) {
-  std::string CPUName = CPU;
+  std::string CPUName = std::string(CPU);
   if (CPUName.empty())
     CPUName = "generic";
 
-  ParseSubtargetFeatures(CPUName, FS);
+  ParseSubtargetFeatures(CPUName, CPUName, FS);
   return *this;
 }
 
 OR1KSubtarget::OR1KSubtarget(const Triple &TT,
-                             const std::string &CPU, const std::string &FS,
+                             const StringRef &CPU, const StringRef &FS,
                              const OR1KTargetMachine &TM)
-  : OR1KGenSubtargetInfo(TT, CPU, FS),
+  : OR1KGenSubtargetInfo(TT, CPU, CPU, FS),
     HasMul(false), HasDiv(false), HasRor(false), HasCmov(false),
     HasAddc(false), HasFfl1(false), HasExt(false), HasInterrupts(true),
     TLInfo(TM, initializeSubtargetDependencies(CPU, FS)),

@@ -32,6 +32,7 @@
 #include "llvm/IR/CallingConv.h"
 #include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/GlobalAlias.h"
+#include "llvm/Support/Alignment.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
@@ -145,9 +146,9 @@ OR1KTargetLowering::OR1KTargetLowering(const OR1KTargetMachine &TM,
   setOperationAction(ISD::FP_TO_UINT,          MVT::i32,   Expand);
   setOperationAction(ISD::UINT_TO_FP,          MVT::i32,   Expand);
 
-  // Function alignments (log2)
-  setMinFunctionAlignment(2);
-  setPrefFunctionAlignment(2);
+  // Function alignments
+  setMinFunctionAlignment(Align(4));
+  setPrefFunctionAlignment(Align(4));
 
   MaxStoresPerMemcpy = 16;
   MaxStoresPerMemcpyOptSize = 8;
@@ -158,13 +159,13 @@ bool OR1KTargetLowering::useSoftFloat() const {
   return getTargetMachine().Options.FloatABIType != FloatABI::Hard;
 }
 
-unsigned
+Register
 OR1KTargetLowering::getExceptionPointerRegister(const Constant *
                                                 PersonalityFn) const {
   return OR1K::R3;
 }
 
-unsigned
+Register
 OR1KTargetLowering::getExceptionSelectorRegister(const Constant *
                                                  PersonalityFn) const {
   return OR1K::R4;
@@ -245,14 +246,14 @@ OR1KTargetLowering::getSingleConstraintMatchWeight(
 /// LowerAsmOperandForConstraint - Lower the specified operand into the Ops
 /// vector.  If it is invalid, don't add anything to Ops.
 void OR1KTargetLowering::LowerAsmOperandForConstraint(SDValue Op,
-                                                      std::string &Constraint,
+                                                      StringRef Constraint,
                                                       std::vector<SDValue>&Ops,
                                                       SelectionDAG &DAG) const {
   SDLoc dl(Op);
   SDValue Result(0, 0);
 
   // Only support length 1 constraints for now.
-  if (Constraint.length() > 1) return;
+  if (Constraint.size() > 1) return;
 
   char ConstraintLetter = Constraint[0];
   switch (ConstraintLetter) {
@@ -346,7 +347,7 @@ static bool CC_OR1K32_VarArg(unsigned ValNo, MVT ValVT,
   }
 
   // VarArgs get passed on stack
-  unsigned Offset = State.AllocateStack(4, 4);
+  unsigned Offset = State.AllocateStack(4, Align(4));
   State.addLoc(CCValAssign::getMem(ValNo, ValVT, Offset, LocVT, LocInfo));
   return false;
 }
@@ -500,7 +501,7 @@ OR1KTargetLowering::LowerCCCArguments(SDValue Chain,
   if (isVarArg) {
     // Record the frame index of the first variable argument
     // which is a value necessary to VASTART.
-    int FI = MFI.CreateFixedObject(4, CCInfo.getNextStackOffset(), true);
+    int FI = MFI.CreateFixedObject(4, CCInfo.getStackSize(), true);
     OR1KMFI.setVarArgsFrameIndex(FI);
   }
 
@@ -511,7 +512,8 @@ bool
 OR1KTargetLowering::CanLowerReturn(CallingConv::ID CallConv,
                                    MachineFunction &MF, bool isVarArg,
                                    const SmallVectorImpl<ISD::OutputArg> &Outs,
-                                   LLVMContext &Context) const {
+                                   LLVMContext &Context,
+                                   const Type *RetTy) const {
   SmallVector<CCValAssign, 16> RVLocs;
   CCState CCInfo(CallConv, isVarArg, MF, RVLocs, Context);
   return CCInfo.CheckReturn(Outs, RetCC_OR1K32);
@@ -612,7 +614,7 @@ OR1KTargetLowering::LowerCCCCallTo(SDValue Chain, SDValue Callee,
   }
 
   // Get a count of how many bytes are to be pushed on the stack.
-  unsigned NumBytes = CCInfo.getNextStackOffset();
+  unsigned NumBytes = CCInfo.getStackSize();
 
   // Create local copies for byval args.
   SmallVector<SDValue, 8> ByValArgs;
@@ -623,16 +625,17 @@ OR1KTargetLowering::LowerCCCCallTo(SDValue Chain, SDValue Callee,
 
     SDValue Arg = OutVals[i];
     unsigned Size = Flags.getByValSize();
-    unsigned Align = Flags.getByValAlign();
+    Align ByteAlign = Flags.getNonZeroByValAlign();
 
-    int FI = MFI.CreateStackObject(Size, Align, /*isSS=*/false);
+    int FI = MFI.CreateStackObject(Size, ByteAlign, /*isSS=*/false);
     SDValue FIPtr = DAG.getFrameIndex(FI, PtrVT);
     SDValue SizeNode = DAG.getConstant(Size, dl, MVT::i32);
 
-    Chain = DAG.getMemcpy(Chain, dl, FIPtr, Arg, SizeNode, Align,
+    Chain = DAG.getMemcpy(Chain, dl, FIPtr, Arg, SizeNode, ByteAlign,
                           /*isVolatile=*/false,
                           /*AlwaysInline=*/false,
-                          /*isTailCall=*/false,
+                          /*CI=*/nullptr,
+                          /*OverrideTailCall=*/std::nullopt,
                           MachinePointerInfo(), MachinePointerInfo());
     ByValArgs.push_back(FIPtr);
   }
@@ -1077,9 +1080,9 @@ SDValue OR1KTargetLowering::LowerConstantPool(SDValue Op,
   uint8_t OpFlagHi = IsPIC ? OR1KII::MO_GOTOFFHI : OR1KII::MO_ABS_HI;
   uint8_t OpFlagLo = IsPIC ? OR1KII::MO_GOTOFFLO : OR1KII::MO_ABS_LO;
 
-  SDValue Hi = DAG.getTargetConstantPool(C, MVT::i32, N->getAlignment(),
+  SDValue Hi = DAG.getTargetConstantPool(C, MVT::i32, N->getAlign(),
                                          N->getOffset(), OpFlagHi);
-  SDValue Lo = DAG.getTargetConstantPool(C, MVT::i32, N->getAlignment(),
+  SDValue Lo = DAG.getTargetConstantPool(C, MVT::i32, N->getAlign(),
                                          N->getOffset(), OpFlagLo);
   Hi = DAG.getNode(OR1KISD::HI, dl, MVT::i32, Hi);
   Lo = DAG.getNode(OR1KISD::LO, dl, MVT::i32, Lo);

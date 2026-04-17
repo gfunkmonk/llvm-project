@@ -23,7 +23,7 @@ class MCAsmBackend;
 class MCCodeEmitter;
 class MCContext;
 class MCInstrInfo;
-class MCObjectWriter;
+class MCObjectTargetWriter;
 class MCRegisterInfo;
 class MCSubtargetInfo;
 class MCTargetOptions;
@@ -41,8 +41,8 @@ MCAsmBackend *createOR1KAsmBackend(const Target &T, const MCSubtargetInfo &STI,
                                    const MCRegisterInfo &MRI,
                                    const MCTargetOptions &Options);
 
-std::unique_ptr<MCObjectWriter>
-createOR1KELFObjectWriter(raw_pwrite_stream &OS, uint8_t OSABI);
+std::unique_ptr<MCObjectTargetWriter>
+createOR1KELFObjectWriter(uint8_t OSABI);
 } // End llvm namespace
 
 // Defines symbolic names for OR1K registers.  This defines a mapping from

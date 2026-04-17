@@ -11,11 +11,10 @@
 #include "MCTargetDesc/OR1KMCTargetDesc.h"
 #include "llvm/MC/MCAsmBackend.h"
 #include "llvm/MC/MCAssembler.h"
-#include "llvm/MC/MCDirectives.h"
 #include "llvm/MC/MCELFObjectWriter.h"
-#include "llvm/MC/MCFixupKindInfo.h"
 #include "llvm/MC/MCObjectWriter.h"
 #include "llvm/MC/MCSubtargetInfo.h"
+#include "llvm/MC/MCValue.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -62,48 +61,44 @@ class OR1KAsmBackend : public MCAsmBackend {
 
 public:
   OR1KAsmBackend(const Target &T, Triple::OSType _OSType)
-    : MCAsmBackend(), OSType(_OSType) {
+    : MCAsmBackend(llvm::endianness::big), OSType(_OSType) {
   }
 
-  void applyFixup(const MCAssembler &Asm, const MCFixup &Fixup,
+  void applyFixup(const MCFragment &, const MCFixup &Fixup,
                   const MCValue &Target, MutableArrayRef<char> Data,
-                  uint64_t Value, bool IsResolved) const override;
+                  uint64_t Value, bool IsResolved) override;
 
-  std::unique_ptr<MCObjectWriter>
-  createObjectWriter(raw_pwrite_stream &OS) const override;
+  std::unique_ptr<MCObjectTargetWriter>
+  createObjectTargetWriter() const override;
 
   // No instruction requires relaxation
-  bool fixupNeedsRelaxation(const MCFixup &Fixup, uint64_t Value,
-                            const MCRelaxableFragment *DF,
-                            const MCAsmLayout &Layout) const override {
+  bool fixupNeedsRelaxation(const MCFixup &Fixup,
+                            uint64_t Value) const override {
     return false;
   }
 
-  const MCFixupKindInfo &getFixupKindInfo(MCFixupKind Kind) const override ;
+  MCFixupKindInfo getFixupKindInfo(MCFixupKind Kind) const override;
 
-  unsigned getNumFixupKinds() const  override { return OR1K::NumTargetFixupKinds; }
-
-  bool mayNeedRelaxation(const MCInst &Inst) const  override { return false; }
-
-  void relaxInstruction(const MCInst &Inst, const MCSubtargetInfo &STI,
-                        MCInst &Res) const override {}
-
-  bool writeNopData(uint64_t Count, MCObjectWriter *OW) const override ;
+  bool writeNopData(raw_ostream &OS, uint64_t Count,
+                    const MCSubtargetInfo *STI) const override;
 };
 
-bool OR1KAsmBackend::writeNopData(uint64_t Count, MCObjectWriter *OW) const {
+bool OR1KAsmBackend::writeNopData(raw_ostream &OS, uint64_t Count,
+                                  const MCSubtargetInfo *STI) const {
   if ((Count % 4) != 0)
     return false;
 
   for (uint64_t i = 0; i < Count; i += 4)
-    OW->write32(0x15000000);
+    OS.write("\x15\x00\x00\x00", 4);
 
   return true;
 }
 
-void OR1KAsmBackend::applyFixup(const MCAssembler &Asm, const MCFixup &Fixup,
+void OR1KAsmBackend::applyFixup(const MCFragment &F, const MCFixup &Fixup,
                                 const MCValue &Target, MutableArrayRef<char> Data,
-                                uint64_t Value, bool IsResolved) const {
+                                uint64_t Value, bool IsResolved) {
+  if (!IsResolved)
+    Asm->getWriter().recordRelocation(F, Fixup, Target, Value);
   MCFixupKind Kind = Fixup.getKind();
   Value = adjustFixupValue((unsigned)Kind, Value);
 
@@ -142,13 +137,13 @@ void OR1KAsmBackend::applyFixup(const MCAssembler &Asm, const MCFixup &Fixup,
   }
 }
 
-std::unique_ptr<MCObjectWriter>
-OR1KAsmBackend::createObjectWriter(raw_pwrite_stream &OS) const {
+std::unique_ptr<MCObjectTargetWriter>
+OR1KAsmBackend::createObjectTargetWriter() const {
   uint8_t OSABI = MCELFObjectTargetWriter::getOSABI(OSType);
-  return createOR1KELFObjectWriter(OS, OSABI);
+  return createOR1KELFObjectWriter(OSABI);
 }
 
-const MCFixupKindInfo &OR1KAsmBackend::getFixupKindInfo(MCFixupKind Kind) const{
+MCFixupKindInfo OR1KAsmBackend::getFixupKindInfo(MCFixupKind Kind) const{
   const static MCFixupKindInfo Infos[OR1K::NumTargetFixupKinds] = {
     // This table *must* be in same the order of fixup_* kinds in
     // OR1KFixupKinds.h.
@@ -160,14 +155,14 @@ const MCFixupKindInfo &OR1KAsmBackend::getFixupKindInfo(MCFixupKind Kind) const{
     { "fixup_OR1K_8",           24,      8,   0 },
     { "fixup_OR1K_LO16_INSN",   16,     16,   0 },
     { "fixup_OR1K_HI16_INSN",   16,     16,   0 },
-    { "fixup_OR1K_REL26",       6,      26,   MCFixupKindInfo::FKF_IsPCRel },
-    { "fixup_OR1K_PCREL32",     0,      32,   MCFixupKindInfo::FKF_IsPCRel },
-    { "fixup_OR1K_PCREL16",     16,     16,   MCFixupKindInfo::FKF_IsPCRel },
-    { "fixup_OR1K_PCREL8",      24,      8,   MCFixupKindInfo::FKF_IsPCRel },
+    { "fixup_OR1K_REL26",       6,      26,   0 },
+    { "fixup_OR1K_PCREL32",     0,      32,   0 },
+    { "fixup_OR1K_PCREL16",     16,     16,   0 },
+    { "fixup_OR1K_PCREL8",      24,      8,   0 },
     { "fixup_OR1K_GOTPC_HI16",  16,     16,   0 },
     { "fixup_OR1K_GOTPC_LO16",  16,     16,   0 },
     { "fixup_OR1K_GOT16",       16,     16,   0 },
-    { "fixup_OR1K_PLT26",       6,      26,   MCFixupKindInfo::FKF_IsPCRel },
+    { "fixup_OR1K_PLT26",       6,      26,   0 },
     { "fixup_OR1K_GOTOFF_HI16", 16,     16,   0 },
     { "fixup_OR1K_GOTOFF_LO16", 16,     16,   0 },
     { "fixup_OR1K_COPY",        0,      32,   0 },
@@ -179,7 +174,7 @@ const MCFixupKindInfo &OR1KAsmBackend::getFixupKindInfo(MCFixupKind Kind) const{
   if (Kind < FirstTargetFixupKind)
      return MCAsmBackend::getFixupKindInfo(Kind);
 
-  assert(unsigned(Kind - FirstTargetFixupKind) < getNumFixupKinds() &&
+  assert(unsigned(Kind - FirstTargetFixupKind) < OR1K::NumTargetFixupKinds &&
          "Invalid kind!");
   return Infos[Kind - FirstTargetFixupKind];
 }

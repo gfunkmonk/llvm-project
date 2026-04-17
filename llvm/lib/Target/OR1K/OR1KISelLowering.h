@@ -74,9 +74,9 @@ namespace llvm {
 
     bool useSoftFloat() const override;
 
-    unsigned getExceptionPointerRegister(const Constant *
+    Register getExceptionPointerRegister(const Constant *
                                          PersonalityFn) const override;
-    unsigned getExceptionSelectorRegister(const Constant *
+    Register getExceptionSelectorRegister(const Constant *
                                           PersonalityFn) const override;
 
     SDValue LowerBR_CC(SDValue Op, SelectionDAG &DAG) const;
@@ -101,7 +101,7 @@ namespace llvm {
     getSingleConstraintMatchWeight(AsmOperandInfo &info,
                                    const char *Constraint) const override;
     void LowerAsmOperandForConstraint(SDValue Op,
-                                      std::string &Constraint,
+                                      StringRef Constraint,
                                       std::vector<SDValue> &Ops,
                                       SelectionDAG &DAG) const override;
 
@@ -146,7 +146,7 @@ namespace llvm {
     bool CanLowerReturn(CallingConv::ID CallConv,
                         MachineFunction &MF, bool isVarArg,
                         const SmallVectorImpl<ISD::OutputArg> &Outs,
-                        LLVMContext &Context) const override;
+                        LLVMContext &Context, const Type *RetTy) const override;
 
     SDValue LowerReturn(SDValue Chain,
                         CallingConv::ID CallConv, bool isVarArg,

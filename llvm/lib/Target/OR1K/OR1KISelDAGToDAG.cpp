@@ -25,6 +25,7 @@
 #include "llvm/CodeGen/SelectionDAGISel.h"
 #include "llvm/IR/CFG.h"
 #include "llvm/IR/GlobalValue.h"
+#include "llvm/IR/InlineAsm.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/Type.h"
@@ -45,18 +46,16 @@ using namespace llvm;
 namespace {
 
 class OR1KDAGToDAGISel : public SelectionDAGISel {
-  const OR1KSubtarget *Subtarget;
+  const OR1KSubtarget *Subtarget = nullptr;
 
 public:
-  explicit OR1KDAGToDAGISel(OR1KTargetMachine &TM) : SelectionDAGISel(TM) {}
-
-  StringRef getPassName() const override {
-    return "OR1K DAG->DAG Pattern Instruction Selection";
-  }
+  explicit OR1KDAGToDAGISel(OR1KTargetMachine &TM)
+      : SelectionDAGISel(static_cast<TargetMachine &>(TM)) {}
 
   bool runOnMachineFunction(MachineFunction &MF) override;
 
-  bool SelectInlineAsmMemoryOperand(const SDValue &Op, unsigned ConstraintID,
+  bool SelectInlineAsmMemoryOperand(const SDValue &Op,
+                                    InlineAsm::ConstraintCode ConstraintID,
                                     std::vector<SDValue> &OutOps) override;
 
 private:
@@ -69,7 +68,16 @@ private:
   bool SelectAddr(SDValue Addr, SDValue &Base, SDValue &Offset);
 };
 
-}
+class OR1KDAGToDAGISelLegacy : public SelectionDAGISelLegacy {
+public:
+  static char ID;
+  OR1KDAGToDAGISelLegacy(OR1KTargetMachine &TM)
+      : SelectionDAGISelLegacy(ID, std::make_unique<OR1KDAGToDAGISel>(TM)) {}
+};
+
+} // namespace
+
+char OR1KDAGToDAGISelLegacy::ID;
 
 bool OR1KDAGToDAGISel::runOnMachineFunction(MachineFunction &MF) {
   Subtarget = &static_cast<const OR1KSubtarget &>(MF.getSubtarget());
@@ -161,12 +169,12 @@ SelectAddr(SDValue Addr, SDValue &Base, SDValue &Offset) {
 }
 
 bool OR1KDAGToDAGISel::
-SelectInlineAsmMemoryOperand(const SDValue &Op, unsigned ConstraintID,
+SelectInlineAsmMemoryOperand(const SDValue &Op, InlineAsm::ConstraintCode ConstraintID,
                              std::vector<SDValue> &OutOps) {
   SDValue Op0, Op1;
   switch (ConstraintID) {
   default: return true;
-  case InlineAsm::Constraint_m:   // memory
+  case InlineAsm::ConstraintCode::m:   // memory
     if (!SelectAddr(Op, Op0, Op1))
       return true;
     break;
@@ -184,11 +192,11 @@ void OR1KDAGToDAGISel::Select(SDNode *Node) {
   SDLoc dl(Node);
 
   // Dump information about the Node being selected
-  DEBUG(errs() << "Selecting: "; Node->dump(CurDAG); errs() << "\n");
+  LLVM_DEBUG(errs() << "Selecting: "; Node->dump(CurDAG); errs() << "\n");
 
   // If we have a custom node, we already have selected!
   if (Node->isMachineOpcode()) {
-    DEBUG(errs() << "== "; Node->dump(CurDAG); errs() << "\n");
+    LLVM_DEBUG(errs() << "== "; Node->dump(CurDAG); errs() << "\n");
     Node->setNodeId(-1);
     return;
   }
@@ -221,5 +229,5 @@ void OR1KDAGToDAGISel::Select(SDNode *Node) {
 /// createOR1KISelDag - This pass converts a legalized DAG into a
 /// OR1K-specific DAG, ready for instruction scheduling.
 FunctionPass *llvm::createOR1KISelDag(OR1KTargetMachine &TM) {
-  return new OR1KDAGToDAGISel(TM);
+  return new OR1KDAGToDAGISelLegacy(TM);
 }

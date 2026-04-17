@@ -18,12 +18,32 @@
 
 namespace llvm {
 class Triple;
+class MCSpecifierExpr;
+class raw_ostream;
 
 class OR1KMCAsmInfo : public MCAsmInfoELF {
   virtual void anchor();
 public:
   explicit OR1KMCAsmInfo(const Triple &TT);
+  void printSpecifierExpr(raw_ostream &OS,
+                          const MCSpecifierExpr &Expr) const override;
 };
+
+namespace OR1K {
+using Specifier = uint16_t;
+enum {
+  S_None = 0,
+  S_ABS_HI,
+  S_ABS_LO,
+  S_PLT,
+  S_GOTPCHI,
+  S_GOTPCLO,
+  S_GOTOFFHI,
+  S_GOTOFFLO,
+  S_GOT,
+};
+} // namespace OR1K
+
 } // namespace llvm
 
 #endif

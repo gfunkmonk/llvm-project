@@ -35,20 +35,27 @@ public:
 
   void copyPhysReg(MachineBasicBlock &MBB,
                    MachineBasicBlock::iterator I, const DebugLoc &DL,
-                   unsigned DestReg, unsigned SrcReg,
-                   bool KillSrc) const override;
+                   Register DestReg, Register SrcReg,
+                   bool KillSrc, bool RenamableDest = false,
+                   bool RenamableSrc = false) const override;
 
   void storeRegToStackSlot(MachineBasicBlock &MBB,
-                           MachineBasicBlock::iterator MBBI,
-                           unsigned SrcReg, bool isKill, int FrameIndex,
+                           MachineBasicBlock::iterator MI, Register SrcReg,
+                           bool isKill, int FrameIndex,
                            const TargetRegisterClass *RC,
-                           const TargetRegisterInfo *TRI) const override;
+                           const TargetRegisterInfo *TRI,
+                           Register VReg,
+                           MachineInstr::MIFlag Flags =
+                               MachineInstr::NoFlags) const override;
 
   void loadRegFromStackSlot(MachineBasicBlock &MBB,
-                            MachineBasicBlock::iterator MBBI,
-                            unsigned DestReg, int FrameIndex,
+                            MachineBasicBlock::iterator MI, Register DestReg,
+                            int FrameIndex,
                             const TargetRegisterClass *RC,
-                            const TargetRegisterInfo *TRI) const override;
+                            const TargetRegisterInfo *TRI,
+                            Register VReg,
+                            MachineInstr::MIFlag Flags =
+                                MachineInstr::NoFlags) const override;
 
   bool analyzeBranch(MachineBasicBlock &MBB,
                      MachineBasicBlock *&TBB, MachineBasicBlock *&FBB,
