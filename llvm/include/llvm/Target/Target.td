@@ -1142,6 +1142,7 @@ class OptionalDefOperand<ValueType ty, dag OpTypes, dag defaultops>
 // which are global to the target machine.
 //
 class InstrInfo {
+  bit decodePositionallyEncodedOperands = false;
   // Target can specify its instructions in either big or little-endian formats.
   // For instance, while both Sparc and PowerPC are big-endian platforms, the
   // Sparc manual specifies its instructions in the format [31..0] (big), while
