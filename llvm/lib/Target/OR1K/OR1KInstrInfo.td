@@ -167,21 +167,21 @@ def OR1K_COND_NEG : PatLeaf<(i32 1)>;
 
 // Feature support predicates
 def HasDiv       : Predicate<"Subtarget->hasDiv()">,
-                   AssemblerPredicate<"FeatureDiv">;
+                   AssemblerPredicate<(all_of FeatureDiv)>;
 def HasMul       : Predicate<"Subtarget->hasMul()">,
-                   AssemblerPredicate<"FeatureMul">;
+                   AssemblerPredicate<(all_of FeatureMul)>;
 def HasRor       : Predicate<"Subtarget->hasRor()">,
-                   AssemblerPredicate<"FeatureRor">;
+                   AssemblerPredicate<(all_of FeatureRor)>;
 def HasCmov      : Predicate<"Subtarget->hasCmov()">,
-                   AssemblerPredicate<"FeatureCmov">;
+                   AssemblerPredicate<(all_of FeatureCmov)>;
 def NoCmov       : Predicate<"!Subtarget->hasCmov()">,
-                   AssemblerPredicate<"!FeatureCmov">;
+                   AssemblerPredicate<(all_of (not FeatureCmov))>;
 def HasAddc      : Predicate<"Subtarget->hasAddc()">,
-                   AssemblerPredicate<"FeatureAddc">;
+                   AssemblerPredicate<(all_of FeatureAddc)>;
 def HasFfl1      : Predicate<"Subtarget->hasFfl1()">,
-                   AssemblerPredicate<"FeatureFfl1">;
+                   AssemblerPredicate<(all_of FeatureFfl1)>;
 def HasExt       : Predicate<"Subtarget->hasExt()">,
-                   AssemblerPredicate<"FeatureExt">;
+                   AssemblerPredicate<(all_of FeatureExt)>;
 
 // -------------------------------------------------- //
 // Condition/SF instructions
