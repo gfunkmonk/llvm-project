@@ -28,8 +28,9 @@ class SuperHTargetMachine : public LLVMTargetMachine {
 public:
   SuperHTargetMachine(const Target &T, const Triple &TT, StringRef CPU,
                     StringRef FS, const TargetOptions &Options,
-                    Optional<Reloc::Model> RM, Optional<CodeModel::Model> CM,
-                    CodeGenOpt::Level OL, bool JIT);
+                    std::optional<Reloc::Model> RM,
+                    std::optional<CodeModel::Model> CM,
+                    CodeGenOptLevel OL, bool JIT);
 
   const SuperHSubtarget *getSubtargetImpl(const Function &F) const override;
   const SuperHSubtarget *getSubtargetImpl() const = delete;

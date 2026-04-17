@@ -21,7 +21,7 @@
 namespace llvm {
 class SuperHDAGToDAGISel : public SelectionDAGISel {
 public:
-  explicit SuperHDAGToDAGISel(SuperHTargetMachine &TM, CodeGenOpt::Level OL)
+  explicit SuperHDAGToDAGISel(SuperHTargetMachine &TM, CodeGenOptLevel OL)
       : SelectionDAGISel(TM, OL), Subtarget(nullptr) {}
 
   // Pass Name

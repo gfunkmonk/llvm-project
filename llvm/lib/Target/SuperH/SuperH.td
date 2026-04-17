@@ -23,9 +23,7 @@ include "SuperHRegisterInfo.td"
 include "SuperHCallingConv.td"
 include "SuperHInstrInfo.td"
 
-def SuperHInstrInfo : InstrInfo {
-  let decodePositionallyEncodedOperands = 1;
-}
+def SuperHInstrInfo : InstrInfo {}
 
 //===----------------------------------------------------------------------===//
 // SuperH processors supported
