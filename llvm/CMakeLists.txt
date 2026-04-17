@@ -529,13 +529,16 @@ set(LLVM_ALL_TARGETS
   Hexagon
   Lanai
   LoongArch
+  M68k
   Mips
   MSP430
   NVPTX
+  OR1K
   PowerPC
   RISCV
   Sparc
   SPIRV
+  SuperH
   SystemZ
   VE
   WebAssembly
@@ -547,7 +550,6 @@ set(LLVM_ALL_EXPERIMENTAL_TARGETS
   ARC
   CSKY
   DirectX
-  M68k
   Xtensa
 )
 
