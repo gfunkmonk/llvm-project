@@ -45,7 +45,7 @@ define amdgpu_kernel void @my_kernel() {
 ; ASM-DAG:    .amdgpu_typeid "vi"
 ; ASM-DAG:    .end_amdgpu_info
 ; ASM-DAG:    .amdgpu_info caller
-; ASM-DAG:    .amdgpu_flags 14
+; ASM-DAG:    .amdgpu_flags 2
 ; ASM-DAG:    .amdgpu_num_vgpr {{[0-9]+}}
 ; ASM-DAG:    .amdgpu_indirect_call "vi"
 ; ASM-DAG:    .end_amdgpu_info
