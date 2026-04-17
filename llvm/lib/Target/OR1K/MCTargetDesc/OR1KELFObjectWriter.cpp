@@ -10,10 +10,11 @@
 #include "MCTargetDesc/OR1KBaseInfo.h"
 #include "MCTargetDesc/OR1KFixupKinds.h"
 #include "MCTargetDesc/OR1KMCTargetDesc.h"
+#include "llvm/BinaryFormat/ELF.h"
 #include "llvm/MC/MCELFObjectWriter.h"
+#include "llvm/MC/MCFixup.h"
 #include "llvm/MC/MCObjectWriter.h"
 #include "llvm/Support/ErrorHandling.h"
-#include "llvm/Support/raw_ostream.h"
 
 using namespace llvm;
 
@@ -22,10 +23,10 @@ namespace {
   public:
     OR1KELFObjectWriter(uint8_t OSABI);
 
-    virtual ~OR1KELFObjectWriter();
+    ~OR1KELFObjectWriter() override = default;
   protected:
-    unsigned getRelocType(MCContext &Ctx, const MCValue &Target,
-                          const MCFixup &Fixup, bool IsPCRel) const override;
+    unsigned getRelocType(const MCFixup &Fixup, const MCValue &Target,
+                          bool IsPCRel) const override;
   };
 }
 
@@ -33,11 +34,9 @@ OR1KELFObjectWriter::OR1KELFObjectWriter(uint8_t OSABI)
   : MCELFObjectTargetWriter(/*Is64Bit=*/ false, OSABI, ELF::EM_OPENRISC,
                             /*HasRelocationAddend=*/ true) {}
 
-OR1KELFObjectWriter::~OR1KELFObjectWriter() {}
-
 unsigned
-OR1KELFObjectWriter::getRelocType(MCContext &Ctx, const MCValue &Target,
-                                  const MCFixup &Fixup, bool IsPCRel) const {
+OR1KELFObjectWriter::getRelocType(const MCFixup &Fixup, const MCValue &Target,
+                                  bool IsPCRel) const {
   unsigned Type;
   unsigned Kind = (unsigned)Fixup.getKind();
   switch (Kind) {
@@ -61,15 +60,12 @@ OR1KELFObjectWriter::getRelocType(MCContext &Ctx, const MCValue &Target,
         Type = ELF::R_OR1K_8;
     break;
     case OR1K::fixup_OR1K_PCREL32:
-    case FK_PCRel_4:
       Type = ELF::R_OR1K_32_PCREL;
       break;
     case OR1K::fixup_OR1K_PCREL16:
-    case FK_PCRel_2:
       Type = ELF::R_OR1K_16_PCREL;
       break;
     case OR1K::fixup_OR1K_PCREL8:
-    case FK_PCRel_1:
       Type = ELF::R_OR1K_8_PCREL;
       break;
     case OR1K::fixup_OR1K_32:
@@ -127,8 +123,7 @@ OR1KELFObjectWriter::getRelocType(MCContext &Ctx, const MCValue &Target,
   return Type;
 }
 
-std::unique_ptr<MCObjectWriter>
-llvm::createOR1KELFObjectWriter(raw_pwrite_stream &OS, uint8_t OSABI) {
-  auto MOTW = llvm::make_unique<OR1KELFObjectWriter>(OSABI);
-  return createELFObjectWriter(std::move(MOTW), OS, /*IsLittleEndian=*/ false);
+std::unique_ptr<MCObjectTargetWriter>
+llvm::createOR1KELFObjectWriter(uint8_t OSABI) {
+  return std::make_unique<OR1KELFObjectWriter>(OSABI);
 }

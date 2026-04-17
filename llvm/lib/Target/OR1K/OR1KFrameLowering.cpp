@@ -17,21 +17,22 @@
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
-#include "llvm/CodeGen/MachineModuleInfo.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
+#include "llvm/MC/MCDwarf.h"
+#include "llvm/MC/MCContext.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/IR/Function.h"
 
 using namespace llvm;
 
-bool OR1KFrameLowering::hasFP(const MachineFunction &MF) const {
+bool OR1KFrameLowering::hasFPImpl(const MachineFunction &MF) const {
   const MachineFrameInfo &MFI = MF.getFrameInfo();
   const TargetRegisterInfo *TRI = MF.getSubtarget().getRegisterInfo();
 
   return (MF.getTarget().Options.DisableFramePointerElim(MF) ||
           MFI.hasVarSizedObjects() ||
           MFI.isFrameAddressTaken() ||
-          TRI->needsStackRealignment(MF));
+          TRI->hasStackRealignment(MF));
 }
 
 // determineFrameLayout - Determine the size of the frame and maximum call
@@ -44,8 +45,8 @@ void OR1KFrameLowering::determineFrameLayout(MachineFunction &MF) const {
   unsigned FrameSize = MFI.getStackSize();
 
   // Get the alignment.
-  unsigned StackAlign = TRI->needsStackRealignment(MF) ?
-    MFI.getMaxAlignment() :
+  unsigned StackAlign = TRI->hasStackRealignment(MF) ?
+    MFI.getMaxAlign().value() :
     MF.getSubtarget().getFrameLowering()->getStackAlignment();
 
   // Get the maximum call frame size of all the calls.
@@ -116,8 +117,7 @@ void OR1KFrameLowering::emitPrologue(MachineFunction &MF,
   // No need to allocate space on the stack.
   if (StackSize == 0 && !HasRA) return;
 
-  MachineModuleInfo &MMI = MF.getMMI();
-  const MCRegisterInfo *MRI = MMI.getContext().getRegisterInfo();
+  const MCRegisterInfo *MRI = MF.getContext().getRegisterInfo();
   unsigned CFIIndex;
 
   int Offset = -4;
@@ -179,9 +179,9 @@ void OR1KFrameLowering::emitPrologue(MachineFunction &MF,
 
   // FIXME: Allocate a scratch register.
   unsigned ScratchReg = OR1K::R13;
-  if (TRI->needsStackRealignment(MF)) {
+  if (TRI->hasStackRealignment(MF)) {
     assert(hasFP(MF) && "Stack realignment without FP not supported");
-    uint32_t AlignLog =  Log2_32(MFI.getMaxAlignment());
+    uint32_t AlignLog =  Log2_32(MFI.getMaxAlign().value());
     // Realign the stackpointer by masking out the lower
     // bits, i.e. r1 <= (r1 - stacksize) & ~alignmask.
     // Since the stack grows down, the resulting stack pointer
@@ -219,7 +219,7 @@ void OR1KFrameLowering::emitPrologue(MachineFunction &MF,
   if(!hasFP(MF)) {
     // Emit ".cfi_def_cfa_offset StackSize"
     CFIIndex = MF.addFrameInst(
-        MCCFIInstruction::createDefCfaOffset(nullptr, -StackSize));
+        MCCFIInstruction::createAdjustCfaOffset(nullptr, StackSize));
     BuildMI(MBB, MBBI, DL, TII->get(TargetOpcode::CFI_INSTRUCTION))
         .addCFIIndex(CFIIndex);
   }

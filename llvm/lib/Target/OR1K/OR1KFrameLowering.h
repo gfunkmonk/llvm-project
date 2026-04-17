@@ -27,7 +27,7 @@ private:
 
 public:
   explicit OR1KFrameLowering()
-    : TargetFrameLowering(TargetFrameLowering::StackGrowsDown, 4, 0) {}
+    : TargetFrameLowering(TargetFrameLowering::StackGrowsDown, Align(4), 0) {}
 
   /// emitProlog/emitEpilog - These methods insert prolog and epilog code into
   /// the function.
@@ -39,7 +39,7 @@ public:
                                 MachineBasicBlock &MBB,
                                 MachineBasicBlock::iterator I) const override;
 
-  bool hasFP(const MachineFunction &MF) const override;
+  bool hasFPImpl(const MachineFunction &MF) const override;
   void determineCalleeSaves(MachineFunction &MF, BitVector &SavedRegs,
                             RegScavenger *RS = nullptr) const override;
 };

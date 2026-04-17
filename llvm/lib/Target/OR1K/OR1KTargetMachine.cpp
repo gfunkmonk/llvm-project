@@ -13,6 +13,7 @@
 
 #include "OR1K.h"
 #include "OR1KTargetMachine.h"
+#include "llvm/CodeGen/CodeGenTargetMachineImpl.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/CodeGen/TargetLoweringObjectFileImpl.h"
 #include "llvm/CodeGen/Passes.h"
@@ -34,13 +35,6 @@ static Reloc::Model getEffectiveRelocModel(bool JIT,
   return *RM;
 }
 
-static CodeModel::Model getEffectiveCodeModel(std::optional<CodeModel::Model> CM) {
-  if (CM)
-    return *CM;
-  return CodeModel::Small;
-}
-
-// DL --> Big-endian, 32-bit pointer/ABI/alignment
 // The stack is always 4 byte aligned
 // On function prologue, the stack is created by decrementing
 // its pointer. Once decremented, all references are done with positive
@@ -52,10 +46,10 @@ OR1KTargetMachine::OR1KTargetMachine(const Target &T, const Triple &TT,
                                      std::optional<CodeModel::Model> CM,
                                      CodeGenOptLevel OL,
                                      bool JIT)
-  : LLVMTargetMachine(T, "E-m:e-p:32:32-i8:8:8-i16:16:16-i64:32:32-"
-                         "f64:32:32-v64:32:32-v128:32:32-a0:0:32-n32",
-                      TT, CPU, FS, Options, getEffectiveRelocModel(JIT, RM),
-                      getEffectiveCodeModel(CM), OL),
+  : CodeGenTargetMachineImpl(T, "E-m:e-p:32:32-i8:8:8-i16:16:16-i64:32:32-"
+                                "f64:32:32-v64:32:32-v128:32:32-a0:0:32-n32",
+                             TT, CPU, FS, Options, getEffectiveRelocModel(JIT, RM),
+                             llvm::getEffectiveCodeModel(CM, CodeModel::Small), OL),
     Subtarget(TT, CPU, FS, *this),
     TLOF(std::make_unique<TargetLoweringObjectFileELF>()) {
   initAsmInfo();

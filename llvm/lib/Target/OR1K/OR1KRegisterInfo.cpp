@@ -65,7 +65,7 @@ OR1KRegisterInfo::requiresRegisterScavenging(const MachineFunction &MF) const {
   return true;
 }
 
-void
+bool
 OR1KRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
                                       int SPAdj, unsigned FIOperandNum,
                                       RegScavenger *RS) const {
@@ -94,7 +94,7 @@ OR1KRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
 
   unsigned FrameReg;
   if ((FrameIndex >= MinCSFI && FrameIndex <= MaxCSFI) &&
-      needsStackRealignment(MF)) {
+      hasStackRealignment(MF)) {
     // When stack is realigned, callee-saved registers are always addressed
     // using the frame pointer to be consistent with CFI, since CFA cannot
     // be easily realigned.
@@ -102,14 +102,14 @@ OR1KRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   } else {
     // Addressable stack objects are addressed using neg. offsets from fp
     // or pos. offsets from sp/basepointer
-    if (!HasFP || (needsStackRealignment(MF) && FrameIndex >= 0))
+    if (!HasFP || (hasStackRealignment(MF) && FrameIndex >= 0))
       Offset += MFI.getStackSize();
 
     FrameReg = getFrameRegister(MF);
     if (FrameIndex >= 0) {
       if (hasBasePointer(MF))
         FrameReg = getBaseRegister();
-      else if (needsStackRealignment(MF))
+      else if (hasStackRealignment(MF))
         FrameReg = OR1K::R1;
     }
   }
@@ -122,7 +122,7 @@ OR1KRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
     assert(RS && "Register scavenging must be on");
     unsigned Reg = RS->FindUnusedReg(&OR1K::GPRRegClass);
     if (!Reg)
-       Reg = RS->scavengeRegister(&OR1K::GPRRegClass, II, SPAdj);
+       Reg = RS->scavengeRegisterBackwards(OR1K::GPRRegClass, II, false, SPAdj);
     assert(Reg && "Register scavenger failed");
 
     // Reg = hi(offset) | lo(offset)
@@ -140,24 +140,25 @@ OR1KRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
                                                  /*isKill=*/true);
     MI.getOperand(FIOperandNum+1).ChangeToImmediate(0);
 
-    return;
+    return true;
   }
 
   MI.getOperand(FIOperandNum).ChangeToRegister(FrameReg, /*isDef=*/false);
   MI.getOperand(FIOperandNum+1).ChangeToImmediate(Offset);
+  return false;
 }
 
 bool OR1KRegisterInfo::hasBasePointer(const MachineFunction &MF) const {
    const MachineFrameInfo &MFI = MF.getFrameInfo();
    // When we need stack realignment and there are dynamic allocas, we can't
    // reference off of the stack pointer, so we reserve a base pointer.
-   if (needsStackRealignment(MF) && MFI.hasVarSizedObjects())
+   if (hasStackRealignment(MF) && MFI.hasVarSizedObjects())
      return true;
 
    return false;
 }
 
-unsigned OR1KRegisterInfo::getFrameRegister(const MachineFunction &MF) const {
+Register OR1KRegisterInfo::getFrameRegister(const MachineFunction &MF) const {
   const TargetFrameLowering *TFI = getFrameLowering(MF);
 
   return TFI->hasFP(MF) ? OR1K::R2 : OR1K::R1;

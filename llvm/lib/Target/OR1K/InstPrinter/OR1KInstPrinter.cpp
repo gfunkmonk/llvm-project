@@ -17,6 +17,7 @@
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCInst.h"
+#include "llvm/MC/MCRegister.h"
 #include "llvm/MC/MCSymbol.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FormattedStream.h"
@@ -26,7 +27,8 @@ using namespace llvm;
 #include "OR1KGenAsmWriter.inc"
 
 void OR1KInstPrinter::printInst(const MCInst *MI, uint64_t Address,
-                                StringRef Annot, const MCSubtargetInfo &STI) {
+                                StringRef Annot, const MCSubtargetInfo &STI,
+                                raw_ostream &OS) {
   printInstruction(MI, Address, OS);
   printAnnotation(OS, Annot);
 }
@@ -37,26 +39,7 @@ OR1KInstPrinter::getMnemonic(const MCInst &MI) const {
 }
 
 static void printExpr(const MCExpr *Expr, raw_ostream &O, const MCAsmInfo &MAI) {
-  const MCSymbolRefExpr *SRE;
-
-  const MCBinaryExpr *BE = dyn_cast<MCBinaryExpr>(Expr);
-  if (BE)
-    SRE = dyn_cast<MCSymbolRefExpr>(BE->getLHS());
-  else
-    SRE = dyn_cast<MCSymbolRefExpr>(Expr);
-  assert(SRE && "Unexpected MCExpr type.");
-
-  MCSymbolRefExpr::VariantKind Kind = SRE->getKind();
-
-  if(Kind != MCSymbolRefExpr::VK_None)
-    O << MCSymbolRefExpr::getVariantKindName(Kind);
-
-  if (BE || Kind != MCSymbolRefExpr::VK_None) {
-    O << "(";
-    Expr->print(O, &MAI);
-    O << ")";
-  } else
-    Expr->print(O, &MAI);
+  Expr->print(O, &MAI);
 }
 
 void OR1KInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
@@ -100,6 +83,6 @@ void OR1KInstPrinter::printS16ImmOperand(const MCInst *MI, unsigned OpNo,
   }
 }
 
-void OR1KInstPrinter::printRegName(raw_ostream &O, unsigned RegNo) const {
+void OR1KInstPrinter::printRegName(raw_ostream &O, MCRegister RegNo) {
   O << getRegisterName(RegNo);
 }

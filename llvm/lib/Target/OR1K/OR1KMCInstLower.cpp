@@ -14,6 +14,7 @@
 
 #include "OR1KMCInstLower.h"
 #include "MCTargetDesc/OR1KBaseInfo.h"
+#include "MCTargetDesc/OR1KMCAsmInfo.h"
 #include "llvm/CodeGen/AsmPrinter.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
 #include "llvm/CodeGen/MachineInstr.h"
@@ -65,27 +66,29 @@ GetConstantPoolIndexSymbol(const MachineOperand &MO) const {
 
 MCOperand OR1KMCInstLower::
 LowerSymbolOperand(const MachineOperand &MO, MCSymbol *Sym) const {
-  MCSymbolRefExpr::VariantKind Kind;
+  OR1K::Specifier Kind;
 
   switch (MO.getTargetFlags()) {
   default: llvm_unreachable("Unknown target flag on GV operand");
-  case OR1KII::MO_NO_FLAG:  Kind = MCSymbolRefExpr::VK_None; break;
-  case OR1KII::MO_ABS_HI:   Kind = MCSymbolRefExpr::VK_OR1K_ABS_HI; break;
-  case OR1KII::MO_ABS_LO:   Kind = MCSymbolRefExpr::VK_OR1K_ABS_LO; break;
-  case OR1KII::MO_PLT:      Kind = MCSymbolRefExpr::VK_OR1K_PLT; break;
-  case OR1KII::MO_GOTPCHI:  Kind = MCSymbolRefExpr::VK_OR1K_GOTPCHI; break;
-  case OR1KII::MO_GOTPCLO:  Kind = MCSymbolRefExpr::VK_OR1K_GOTPCLO; break;
-  case OR1KII::MO_GOTOFFHI: Kind = MCSymbolRefExpr::VK_OR1K_GOTOFFHI; break;
-  case OR1KII::MO_GOTOFFLO: Kind = MCSymbolRefExpr::VK_OR1K_GOTOFFLO; break;
-  case OR1KII::MO_GOT:      Kind = MCSymbolRefExpr::VK_OR1K_GOT; break;
+  case OR1KII::MO_NO_FLAG:  Kind = OR1K::S_None; break;
+  case OR1KII::MO_ABS_HI:   Kind = OR1K::S_ABS_HI; break;
+  case OR1KII::MO_ABS_LO:   Kind = OR1K::S_ABS_LO; break;
+  case OR1KII::MO_PLT:      Kind = OR1K::S_PLT; break;
+  case OR1KII::MO_GOTPCHI:  Kind = OR1K::S_GOTPCHI; break;
+  case OR1KII::MO_GOTPCLO:  Kind = OR1K::S_GOTPCLO; break;
+  case OR1KII::MO_GOTOFFHI: Kind = OR1K::S_GOTOFFHI; break;
+  case OR1KII::MO_GOTOFFLO: Kind = OR1K::S_GOTOFFLO; break;
+  case OR1KII::MO_GOT:      Kind = OR1K::S_GOT; break;
   }
 
-  const MCExpr *Expr = MCSymbolRefExpr::create(Sym, Kind, Ctx);
+  const MCExpr *Expr = MCSymbolRefExpr::create(Sym, Ctx);
 
   if (!MO.isJTI() && MO.getOffset())
     Expr = MCBinaryExpr::createAdd(Expr,
                                    MCConstantExpr::create(MO.getOffset(), Ctx),
                                    Ctx);
+  if (Kind != OR1K::S_None)
+    Expr = MCSpecifierExpr::create(Expr, Kind, Ctx);
   return MCOperand::createExpr(Expr);
 }
 

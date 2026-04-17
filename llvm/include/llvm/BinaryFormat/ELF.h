@@ -703,6 +703,11 @@ enum {
 #include "ELFRelocs/Lanai.def"
 };
 
+// ELF Relocation types for OpenRISC (OR1K).
+enum {
+#include "ELFRelocs/OpenRISC.def"
+};
+
 // RISCV Specific e_flags
 enum : unsigned {
   EF_RISCV_RVC = 0x0001,

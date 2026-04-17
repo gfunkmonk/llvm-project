@@ -36,14 +36,14 @@ struct OR1KRegisterInfo : public OR1KGenRegisterInfo {
 
   bool requiresRegisterScavenging(const MachineFunction &MF) const override;
 
-  void eliminateFrameIndex(MachineBasicBlock::iterator II,
+  bool eliminateFrameIndex(MachineBasicBlock::iterator II,
                            int SPAdj, unsigned FIOperandNum,
                            RegScavenger *RS = NULL) const override;
 
   bool hasBasePointer(const MachineFunction &MF) const;
 
   // Debug information queries.
-  unsigned getFrameRegister(const MachineFunction &MF) const override;
+  Register getFrameRegister(const MachineFunction &MF) const override;
   unsigned getBaseRegister() const;
 };
 

@@ -18,6 +18,7 @@
 #include "OR1KMCInstLower.h"
 #include "OR1KTargetMachine.h"
 #include "InstPrinter/OR1KInstPrinter.h"
+#include "MCTargetDesc/OR1KMCAsmInfo.h"
 #include "llvm/CodeGen/AsmPrinter.h"
 #include "llvm/CodeGen/MachineModuleInfo.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
@@ -48,9 +49,9 @@ namespace {
     void printOperand(const MachineInstr *MI, int OpNum,
                       raw_ostream &O, const char* Modifier = 0);
     bool PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
-                         unsigned AsmVariant, const char *ExtraCode,
+                         const char *ExtraCode,
                          raw_ostream &O) override;
-    void EmitInstruction(const MachineInstr *MI) override;
+    void emitInstruction(const MachineInstr *MI) override;
     bool isBlockOnlyReachableByFallthrough(const MachineBasicBlock*
                                            MBB) const override;
   private:
@@ -115,7 +116,6 @@ void OR1KAsmPrinter::printOperand(const MachineInstr *MI, int OpNum,
 /// PrintAsmOperand - Print out an operand for an inline asm expression.
 ///
 bool OR1KAsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
-                                     unsigned AsmVariant,
                                      const char *ExtraCode, raw_ostream &O) {
   // Does this asm operand have a single letter operand modifier?
   if (ExtraCode && ExtraCode[0]) {
@@ -132,7 +132,7 @@ bool OR1KAsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
       if (!FlagsOP.isImm())
         return true;
       unsigned Flags = FlagsOP.getImm();
-      unsigned NumVals = InlineAsm::getNumOperandRegisters(Flags);
+      unsigned NumVals = InlineAsm::Flag(Flags).getNumOperandRegisters();
       if (NumVals != 2)
         return true;
       unsigned RegOp = OpNo + 1;
@@ -160,13 +160,13 @@ void OR1KAsmPrinter::customEmitInstruction(const MachineInstr *MI) {
   default: break;
   case OR1K::MOVHI:
   case OR1K::ORI: {
-    MCSymbolRefExpr::VariantKind Kind = MCSymbolRefExpr::VK_None;
+    OR1K::Specifier Kind = OR1K::S_None;
     if (Opcode == OR1K::MOVHI &&
         MI->getOperand(1).getTargetFlags() == OR1KII::MO_GOTPCHI)
-      Kind = MCSymbolRefExpr::VK_OR1K_GOTPCHI;
+      Kind = OR1K::S_GOTPCHI;
     else if (Opcode == OR1K::ORI &&
              MI->getOperand(2).getTargetFlags() == OR1KII::MO_GOTPCLO)
-      Kind = MCSymbolRefExpr::VK_OR1K_GOTPCLO;
+      Kind = OR1K::S_GOTPCLO;
     else
       break;
 
@@ -179,7 +179,7 @@ void OR1KAsmPrinter::customEmitInstruction(const MachineInstr *MI) {
     const MCExpr *PICBase =
       MCSymbolRefExpr::create(MF->getPICBaseSymbol(), OutContext);
 
-    OutStreamer->EmitLabel(DotSym);
+    OutStreamer->emitLabel(DotSym);
 
     // Now that we have emitted the label, lower the complex operand expression.
     MachineOperand MO = (MI->getOpcode() == OR1K::MOVHI) ?
@@ -188,9 +188,10 @@ void OR1KAsmPrinter::customEmitInstruction(const MachineInstr *MI) {
 
     DotExpr = MCBinaryExpr::createSub(DotExpr, PICBase, OutContext);
 
-    DotExpr = MCBinaryExpr::createAdd(MCSymbolRefExpr::create(OpSym, Kind,
-                                                              OutContext),
-                                      DotExpr, OutContext);
+    const MCExpr *SymExpr = MCSymbolRefExpr::create(OpSym, OutContext);
+    if (Kind != OR1K::S_None)
+      SymExpr = MCSpecifierExpr::create(SymExpr, Kind, OutContext);
+    DotExpr = MCBinaryExpr::createAdd(SymExpr, DotExpr, OutContext);
 
     MCInst TmpInst;
     TmpInst.setOpcode(MI->getOpcode());
@@ -198,7 +199,7 @@ void OR1KAsmPrinter::customEmitInstruction(const MachineInstr *MI) {
     if (MI->getOpcode() == OR1K::ORI)
       TmpInst.addOperand(MCOperand::createReg(MI->getOperand(1).getReg()));
     TmpInst.addOperand(MCOperand::createExpr(DotExpr));
-    OutStreamer->EmitInstruction(TmpInst, STI);
+    OutStreamer->emitInstruction(TmpInst, STI);
     return;
   }
 
@@ -217,16 +218,16 @@ void OR1KAsmPrinter::customEmitInstruction(const MachineInstr *MI) {
     // lot of extra uniquing.
     TmpInst.addOperand(MCOperand::createExpr(
                          MCSymbolRefExpr::create(PICBase,OutContext)));
-    OutStreamer->EmitInstruction(TmpInst, STI);
+    OutStreamer->emitInstruction(TmpInst, STI);
 
     // Emit delay-slot nop
     // FIXME: omit on no-delay-slot targets
     TmpInst.setOpcode(OR1K::NOP);
     TmpInst.getOperand(0) = MCOperand::createImm(0);
-    OutStreamer->EmitInstruction(TmpInst, STI);
+    OutStreamer->emitInstruction(TmpInst, STI);
 
     // Emit the label.
-    OutStreamer->EmitLabel(PICBase);
+    OutStreamer->emitLabel(PICBase);
 
     return;
   }
@@ -237,10 +238,10 @@ void OR1KAsmPrinter::customEmitInstruction(const MachineInstr *MI) {
 
   MCInst TmpInst;
   MCInstLowering.Lower(MI, TmpInst);
-  OutStreamer->EmitInstruction(TmpInst, STI);
+  OutStreamer->emitInstruction(TmpInst, STI);
 }
 
-void OR1KAsmPrinter::EmitInstruction(const MachineInstr *MI) {
+void OR1KAsmPrinter::emitInstruction(const MachineInstr *MI) {
   auto I = MI->getIterator();
   auto E = MI->getParent()->instr_end();
 

@@ -14,8 +14,11 @@
 #define DEBUG_TYPE "mccodeemitter"
 #include "MCTargetDesc/OR1KBaseInfo.h"
 #include "MCTargetDesc/OR1KFixupKinds.h"
+#include "MCTargetDesc/OR1KMCAsmInfo.h"
 #include "MCTargetDesc/OR1KMCTargetDesc.h"
 #include "llvm/MC/MCCodeEmitter.h"
+#include "llvm/MC/MCContext.h"
+#include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCFixup.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCInstrInfo.h"
@@ -55,33 +58,23 @@ public:
                             SmallVectorImpl<MCFixup> &Fixups,
                             const MCSubtargetInfo &STI) const;
 
-  // Emit one byte through output stream
-  void EmitByte(unsigned char C, unsigned &CurByte, raw_ostream &OS) const {
-    OS << (char)C;
+  // Emit one byte through output buffer
+  void EmitByte(unsigned char C, unsigned &CurByte,
+                SmallVectorImpl<char> &CB) const {
+    CB.push_back(C);
     ++CurByte;
-  }
-
-  // Emit a series of bytes (little endian)
-  void EmitLEConstant(uint64_t Val, unsigned Size, unsigned &CurByte,
-                    raw_ostream &OS) const {
-    assert(Size <= 8 && "size too big in emit constant");
-
-    for (unsigned i = 0; i != Size; ++i) {
-      EmitByte(Val & 255, CurByte, OS);
-      Val >>= 8;
-    }
   }
 
   // Emit a series of bytes (big endian)
   void EmitBEConstant(uint64_t Val, unsigned Size, unsigned &CurByte,
-                      raw_ostream &OS) const {
+                      SmallVectorImpl<char> &CB) const {
     assert(Size <= 8 && "size too big in emit constant");
 
     for (int i = (Size-1)*8; i >= 0; i-=8)
-      EmitByte((Val >> i) & 255, CurByte, OS);
+      EmitByte((Val >> i) & 255, CurByte, CB);
   }
 
-  void encodeInstruction(const MCInst &MI, raw_ostream &OS,
+  void encodeInstruction(const MCInst &MI, SmallVectorImpl<char> &CB,
                          SmallVectorImpl<MCFixup> &Fixups,
                          const MCSubtargetInfo &STI) const override;
 };
@@ -114,14 +107,21 @@ getMachineOpValue(const MCInst &MI, const MCOperand &MO,
     Kind = Expr->getKind();
   }
 
-  assert (Kind == MCExpr::SymbolRef);
-
   OR1K::Fixups FixupKind = OR1K::Fixups(0);
+  OR1K::Specifier Spec = OR1K::S_None;
 
-  switch(cast<MCSymbolRefExpr>(Expr)->getKind()) {
+  if (Kind == MCExpr::SymbolRef) {
+    Spec = OR1K::S_None;
+  } else if (Kind == MCExpr::Specifier) {
+    const MCSpecifierExpr *SE = static_cast<const MCSpecifierExpr *>(Expr);
+    Spec = SE->getSpecifier();
+  } else {
+    llvm_unreachable("Unexpected MCExpr kind");
+  }
+
+  switch(Spec) {
     default: llvm_unreachable("Unknown fixup kind!");
-      break;
-    case MCSymbolRefExpr::VK_None:
+    case OR1K::S_None:
       // This is an assembly expression without an explicit
       // relocation kind. Guess one based on instruction format.
       switch(InstrInfo.get(MI.getOpcode()).TSFlags) {
@@ -137,28 +137,28 @@ getMachineOpValue(const MCInst &MI, const MCOperand &MO,
         llvm_unreachable("Unsupported expression operand in assembly source");
       }
       break;
-    case MCSymbolRefExpr::VK_OR1K_ABS_HI:
+    case OR1K::S_ABS_HI:
       FixupKind = OR1K::fixup_OR1K_HI16_INSN;
       break;
-    case MCSymbolRefExpr::VK_OR1K_ABS_LO:
+    case OR1K::S_ABS_LO:
       FixupKind = OR1K::fixup_OR1K_LO16_INSN;
       break;
-    case MCSymbolRefExpr::VK_OR1K_PLT:
+    case OR1K::S_PLT:
       FixupKind = OR1K::fixup_OR1K_PLT26;
       break;
-    case MCSymbolRefExpr::VK_OR1K_GOTPCHI:
+    case OR1K::S_GOTPCHI:
       FixupKind = OR1K::fixup_OR1K_GOTPC_HI16;
       break;
-    case MCSymbolRefExpr::VK_OR1K_GOTPCLO:
+    case OR1K::S_GOTPCLO:
       FixupKind = OR1K::fixup_OR1K_GOTPC_LO16;
       break;
-    case MCSymbolRefExpr::VK_OR1K_GOTOFFHI:
+    case OR1K::S_GOTOFFHI:
       FixupKind = OR1K::fixup_OR1K_GOTOFF_HI16;
       break;
-    case MCSymbolRefExpr::VK_OR1K_GOTOFFLO:
+    case OR1K::S_GOTOFFLO:
       FixupKind = OR1K::fixup_OR1K_GOTOFF_LO16;
       break;
-    case MCSymbolRefExpr::VK_OR1K_GOT:
+    case OR1K::S_GOT:
       FixupKind = OR1K::fixup_OR1K_GOT16;
       break;
   }
@@ -169,7 +169,7 @@ getMachineOpValue(const MCInst &MI, const MCOperand &MO,
 }
 
 void OR1KMCCodeEmitter::
-encodeInstruction(const MCInst &MI, raw_ostream &OS,
+encodeInstruction(const MCInst &MI, SmallVectorImpl<char> &CB,
                   SmallVectorImpl<MCFixup> &Fixups,
                   const MCSubtargetInfo &STI) const {
   // Keep track of the current byte being emitted
@@ -178,7 +178,7 @@ encodeInstruction(const MCInst &MI, raw_ostream &OS,
   // Get instruction encoding and emit it
   ++MCNumEmitted;       // Keep track of the number of emitted insns.
   unsigned Value = getBinaryCodeForInstr(MI, Fixups, STI);
-  EmitBEConstant(Value, 4, CurByte, OS);
+  EmitBEConstant(Value, 4, CurByte, CB);
 }
 
 // Encode OR1K Memory Operand

@@ -15,11 +15,11 @@
 #define OR1K_TARGETMACHINE_H
 
 #include "OR1KSubtarget.h"
-#include "llvm/Target/TargetMachine.h"
+#include "llvm/CodeGen/CodeGenTargetMachineImpl.h"
 #include "llvm/Target/TargetLoweringObjectFile.h"
 
 namespace llvm {
-class OR1KTargetMachine : public LLVMTargetMachine {
+class OR1KTargetMachine : public CodeGenTargetMachineImpl {
   OR1KSubtarget Subtarget;
   std::unique_ptr<TargetLoweringObjectFile> TLOF;
 public:

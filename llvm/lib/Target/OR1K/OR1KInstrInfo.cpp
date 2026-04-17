@@ -39,8 +39,9 @@ OR1KInstrInfo::OR1KInstrInfo()
 
 void OR1KInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
                                 MachineBasicBlock::iterator I, const DebugLoc &DL,
-                                unsigned DestReg, unsigned SrcReg,
-                                bool KillSrc) const {
+                                Register DestReg, Register SrcReg,
+                                bool KillSrc, bool RenamableDest,
+                                bool RenamableSrc) const {
   if (OR1K::GPRRegClass.contains(DestReg, SrcReg))
     BuildMI(MBB, I, DL, get(OR1K::ORI), DestReg)
       .addReg(SrcReg, getKillRegState(KillSrc))
@@ -51,9 +52,10 @@ void OR1KInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
 
 void OR1KInstrInfo::
 storeRegToStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
-                    unsigned SrcReg, bool isKill, int FI,
+                    Register SrcReg, bool isKill, int FI,
                     const TargetRegisterClass *RC,
-                    const TargetRegisterInfo *TRI) const {
+                    const TargetRegisterInfo *TRI,
+                    Register VReg, MachineInstr::MIFlag Flags) const {
   DebugLoc DL;
   if (I != MBB.end()) DL = I->getDebugLoc();
 
@@ -66,9 +68,10 @@ storeRegToStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
 
 void OR1KInstrInfo::
 loadRegFromStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
-                     unsigned DestReg, int FI,
+                     Register DestReg, int FI,
                      const TargetRegisterClass *RC,
-                     const TargetRegisterInfo *TRI) const {
+                     const TargetRegisterInfo *TRI,
+                     Register VReg, MachineInstr::MIFlag Flags) const {
   DebugLoc DL;
   if (I != MBB.end()) DL = I->getDebugLoc();
 
