@@ -33,13 +33,8 @@ void OR1KInstPrinter::printInst(const MCInst *MI, uint64_t Address,
   printAnnotation(OS, Annot);
 }
 
-std::pair<const char *, uint64_t>
-OR1KInstPrinter::getMnemonic(const MCInst &MI) const {
-  return getInstruction(MI).first;
-}
-
 static void printExpr(const MCExpr *Expr, raw_ostream &O, const MCAsmInfo &MAI) {
-  Expr->print(O, &MAI);
+  MAI.printExpr(O, *Expr);
 }
 
 void OR1KInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
