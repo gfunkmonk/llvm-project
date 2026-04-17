@@ -16,7 +16,7 @@
 
 #include "OR1KSubtarget.h"
 #include "llvm/Target/TargetMachine.h"
-#include "llvm/CodeGen/TargetLoweringObjectFile.h"
+#include "llvm/Target/TargetLoweringObjectFile.h"
 
 namespace llvm {
 class OR1KTargetMachine : public LLVMTargetMachine {
