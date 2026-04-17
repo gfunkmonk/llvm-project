@@ -1,3 +1,4 @@
+add_llvm_component_group(OR1K)
 set(LLVM_TARGET_DEFINITIONS OR1K.td)
 
 tablegen(LLVM OR1KGenRegisterInfo.inc -gen-register-info)
