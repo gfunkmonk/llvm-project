@@ -25,10 +25,15 @@ using namespace llvm;
 // Include the auto-generated portion of the assembly writer.
 #include "OR1KGenAsmWriter.inc"
 
-void OR1KInstPrinter::printInst(const MCInst *MI, raw_ostream &O,
+void OR1KInstPrinter::printInst(const MCInst *MI, uint64_t Address,
                                 StringRef Annot, const MCSubtargetInfo &STI) {
-  printInstruction(MI, O);
-  printAnnotation(O, Annot);
+  printInstruction(MI, Address, OS);
+  printAnnotation(OS, Annot);
+}
+
+std::pair<const char *, uint64_t>
+OR1KInstPrinter::getMnemonic(const MCInst &MI) const {
+  return getInstruction(MI).first;
 }
 
 static void printExpr(const MCExpr *Expr, raw_ostream &O, const MCAsmInfo &MAI) {

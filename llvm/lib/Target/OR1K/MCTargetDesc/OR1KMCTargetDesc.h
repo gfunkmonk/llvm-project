@@ -35,7 +35,6 @@ class raw_pwrite_stream;
 extern Target TheOR1KTarget;
 
 MCCodeEmitter *createOR1KMCCodeEmitter(const MCInstrInfo &MII,
-                                       const MCRegisterInfo &MRI,
                                        MCContext &Ctx);
 
 MCAsmBackend *createOR1KAsmBackend(const Target &T, const MCSubtargetInfo &STI,
