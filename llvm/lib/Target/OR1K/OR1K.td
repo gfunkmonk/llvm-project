@@ -17,20 +17,6 @@
 include "llvm/Target/Target.td"
 
 //===----------------------------------------------------------------------===//
-// OR1K Subtarget features.
-//===----------------------------------------------------------------------===//
-
-//===----------------------------------------------------------------------===//
-// Register File, Calling Conv, Instruction Descriptions
-//===----------------------------------------------------------------------===//
-
-include "OR1KRegisterInfo.td"
-include "OR1KCallingConv.td"
-include "OR1KInstrInfo.td"
-
-def OR1KInstrInfo : InstrInfo;
-
-//===----------------------------------------------------------------------===//
 // OR1K subtarget features
 //===----------------------------------------------------------------------===//
 def FeatureMul   : SubtargetFeature<"mul", "HasMul", "true",
@@ -50,6 +36,21 @@ def FeatureExt   : SubtargetFeature<"ext", "HasExt", "true",
 
 def FeatureInterrupts  : SubtargetFeature<"interrupts", "HasInterrupts", "true",
                                           "Use l.lwa/l.swa for atomic RMW ops">;
+
+
+//===----------------------------------------------------------------------===//
+// OR1K Subtarget features.
+//===----------------------------------------------------------------------===//
+
+//===----------------------------------------------------------------------===//
+// Register File, Calling Conv, Instruction Descriptions
+//===----------------------------------------------------------------------===//
+
+include "OR1KRegisterInfo.td"
+include "OR1KCallingConv.td"
+include "OR1KInstrInfo.td"
+
+def OR1KInstrInfo : InstrInfo;
 
 //===----------------------------------------------------------------------===//
 // OR1K processors supported.
