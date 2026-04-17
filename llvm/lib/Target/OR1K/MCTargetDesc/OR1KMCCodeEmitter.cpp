@@ -88,7 +88,6 @@ public:
 } // end anonymous namepsace
 
 MCCodeEmitter *llvm::createOR1KMCCodeEmitter(const MCInstrInfo &MII,
-                                             const MCRegisterInfo &MRI,
                                              MCContext &Ctx) {
   return new OR1KMCCodeEmitter(MII);
 }

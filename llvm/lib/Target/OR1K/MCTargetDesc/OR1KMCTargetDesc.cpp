@@ -18,8 +18,10 @@
 #include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/MC/MCSubtargetInfo.h"
+#include "llvm/MC/MCObjectWriter.h"
+#include "llvm/MC/MCTargetOptions.h"
 #include "llvm/Support/ErrorHandling.h"
-#include "llvm/Support/TargetRegistry.h"
+#include "llvm/MC/TargetRegistry.h"
 
 #define GET_INSTRINFO_MC_DESC
 #include "OR1KGenInstrInfo.inc"
@@ -46,15 +48,16 @@ static MCRegisterInfo *createOR1KMCRegisterInfo(const Triple &TT) {
 
 static MCSubtargetInfo *
 createOR1KMCSubtargetInfo(const Triple &TT, StringRef CPU, StringRef FS) {
-  return createOR1KMCSubtargetInfoImpl(TT, CPU, FS);
+  return createOR1KMCSubtargetInfoImpl(TT, CPU, /*TuneCPU*/ CPU, FS);
 }
 
 static MCAsmInfo *
-createOR1KMCAsmInfo(const MCRegisterInfo &MRI, const Triple &TT) {
+createOR1KMCAsmInfo(const MCRegisterInfo &MRI, const Triple &TT,
+                    const MCTargetOptions &Options) {
   MCAsmInfo *MAI = new OR1KMCAsmInfo(TT);
 
-  MCCFIInstruction Inst = MCCFIInstruction::createDefCfa(
-      0, MRI.getDwarfRegNum(OR1K::R1, true), 0);
+  MCCFIInstruction Inst = MCCFIInstruction::cfiDefCfa(
+      nullptr, MRI.getDwarfRegNum(OR1K::R1, true), 0);
   MAI->addInitialFrameState(Inst);
 
   return MAI;
@@ -62,10 +65,10 @@ createOR1KMCAsmInfo(const MCRegisterInfo &MRI, const Triple &TT) {
 
 static MCStreamer *createMCStreamer(const Triple &T, MCContext &Context,
                                     std::unique_ptr<MCAsmBackend> &&MAB,
-                                    raw_pwrite_stream &OS,
-                                    std::unique_ptr<MCCodeEmitter> &&Emitter,
-                                    bool RelaxAll) {
-  return createELFStreamer(Context, std::move(MAB), OS, std::move(Emitter), RelaxAll);
+                                    std::unique_ptr<MCObjectWriter> &&OW,
+                                    std::unique_ptr<MCCodeEmitter> &&Emitter) {
+  return createELFStreamer(Context, std::move(MAB), std::move(OW),
+                           std::move(Emitter));
 }
 
 static MCInstPrinter *

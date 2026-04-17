@@ -137,8 +137,8 @@ def SWf32 : STOREf32<0x5, "l.sw", store>;
 let isAsCheapAsAMove = 1, isCodeGenOnly = 1 in {
   def MOVHIf32 : MOVHI_I<(outs GPR:$rD), (ins fimm:$imm),
                          [(set GPR:$rD, f32hi16:$imm)]>;
-  def ORIf32 : ALU_RI<0xa, (outs GPR:$rD), (ins GPR:$rA, fimm:$imm),
-                      "l.ori\t$rD, $rA, $imm", []>;
+  def ORIf32 : ALU_RI<0xa, (outs GPR:$rD), (ins GPR:$rA, fimm:$imm16),
+                      "l.ori\t$rD, $rA, $imm16", []>;
 }
 
 //===----------------------------------------------------------------------===//

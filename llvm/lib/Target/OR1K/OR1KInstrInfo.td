@@ -219,8 +219,8 @@ class SF_RI<bits<5> op2Val, string asmstr, PatLeaf Cond>
 }
 
 multiclass SF<bits<5> op2Val, string asmstr, PatLeaf Cond> {
-  def #NAME#  : SF_RR<op2Val, asmstr, Cond>;
-  def #NAME#I : SF_RI<op2Val, asmstr, Cond>;
+  def NAME    : SF_RR<op2Val, asmstr, Cond>;
+  def NAME#I  : SF_RI<op2Val, asmstr, Cond>;
 }
 
 // l.sfxx instructions
@@ -434,8 +434,8 @@ class SHIFT_RI<bits<2> op2Val, string asmstr, SDNode OpNode>
 }
 
 multiclass SHIFT<bits<2> op2Val, string asmstr, SDNode OpNode> {
-  def #NAME#  : SHIFT_RR<op2Val, asmstr, OpNode>;
-  def #NAME#I : SHIFT_RI<op2Val, asmstr, OpNode>;
+  def NAME    : SHIFT_RR<op2Val, asmstr, OpNode>;
+  def NAME#I  : SHIFT_RI<op2Val, asmstr, OpNode>;
 }
 
 defm SLL : SHIFT<0x0, "l.sll", shl>;
@@ -718,16 +718,16 @@ class AtomicCmpSwap<PatFrag Op> :
          [(set GPR:$dst, (Op ADDRri:$ptr, GPR:$cmp, GPR:$swap))]>;
 
 let usesCustomInserter = 1 in {
-  def ATOMIC_LOAD_ADD_I32  : Atomic2Ops<atomic_load_add_32>;
-  def ATOMIC_LOAD_SUB_I32  : Atomic2Ops<atomic_load_sub_32>;
-  def ATOMIC_LOAD_AND_I32  : Atomic2Ops<atomic_load_and_32>;
-  def ATOMIC_LOAD_OR_I32   : Atomic2Ops<atomic_load_or_32>;
-  def ATOMIC_LOAD_XOR_I32  : Atomic2Ops<atomic_load_xor_32>;
-  def ATOMIC_LOAD_NAND_I32 : Atomic2Ops<atomic_load_nand_32>;
+  def ATOMIC_LOAD_ADD_I32  : Atomic2Ops<atomic_load_add_i32>;
+  def ATOMIC_LOAD_SUB_I32  : Atomic2Ops<atomic_load_sub_i32>;
+  def ATOMIC_LOAD_AND_I32  : Atomic2Ops<atomic_load_and_i32>;
+  def ATOMIC_LOAD_OR_I32   : Atomic2Ops<atomic_load_or_i32>;
+  def ATOMIC_LOAD_XOR_I32  : Atomic2Ops<atomic_load_xor_i32>;
+  def ATOMIC_LOAD_NAND_I32 : Atomic2Ops<atomic_load_nand_i32>;
 
-  def ATOMIC_SWAP_I32      : Atomic2Ops<atomic_swap_32>;
+  def ATOMIC_SWAP_I32      : Atomic2Ops<atomic_swap_i32>;
 
-  def ATOMIC_CMP_SWAP_I32  : AtomicCmpSwap<atomic_cmp_swap_32>;
+  def ATOMIC_CMP_SWAP_I32  : AtomicCmpSwap<atomic_cmp_swap_i32>;
 }
 
 // ADJCALLSTACKDOWN/UP implicitly use/def R1 because they may be expanded into

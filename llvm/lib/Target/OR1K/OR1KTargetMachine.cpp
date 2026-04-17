@@ -18,7 +18,7 @@
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/CodeGen/TargetPassConfig.h"
 #include "llvm/Support/FormattedStream.h"
-#include "llvm/Support/TargetRegistry.h"
+#include "llvm/MC/TargetRegistry.h"
 #include "llvm/Target/TargetOptions.h"
 using namespace llvm;
 
@@ -28,13 +28,13 @@ extern "C" void LLVMInitializeOR1KTarget() {
 }
 
 static Reloc::Model getEffectiveRelocModel(bool JIT,
-                                           Optional<Reloc::Model> RM) {
-  if (!RM.hasValue() || JIT)
+                                           std::optional<Reloc::Model> RM) {
+  if (!RM || JIT)
     return Reloc::Static;
   return *RM;
 }
 
-static CodeModel::Model getEffectiveCodeModel(Optional<CodeModel::Model> CM) {
+static CodeModel::Model getEffectiveCodeModel(std::optional<CodeModel::Model> CM) {
   if (CM)
     return *CM;
   return CodeModel::Small;
@@ -48,16 +48,16 @@ static CodeModel::Model getEffectiveCodeModel(Optional<CodeModel::Model> CM) {
 OR1KTargetMachine::OR1KTargetMachine(const Target &T, const Triple &TT,
                                      StringRef CPU, StringRef FS,
                                      const TargetOptions &Options,
-                                     Optional<Reloc::Model> RM,
-                                     Optional<CodeModel::Model> CM,
-                                     CodeGenOpt::Level OL,
+                                     std::optional<Reloc::Model> RM,
+                                     std::optional<CodeModel::Model> CM,
+                                     CodeGenOptLevel OL,
                                      bool JIT)
   : LLVMTargetMachine(T, "E-m:e-p:32:32-i8:8:8-i16:16:16-i64:32:32-"
                          "f64:32:32-v64:32:32-v128:32:32-a0:0:32-n32",
                       TT, CPU, FS, Options, getEffectiveRelocModel(JIT, RM),
                       getEffectiveCodeModel(CM), OL),
     Subtarget(TT, CPU, FS, *this),
-    TLOF(make_unique<TargetLoweringObjectFileELF>()) {
+    TLOF(std::make_unique<TargetLoweringObjectFileELF>()) {
   initAsmInfo();
 }
 

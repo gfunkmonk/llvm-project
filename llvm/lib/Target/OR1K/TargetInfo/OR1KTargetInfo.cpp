@@ -8,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "OR1K.h"
-#include "llvm/Support/TargetRegistry.h"
+#include "llvm/MC/TargetRegistry.h"
 using namespace llvm;
 
 Target llvm::TheOR1KTarget;

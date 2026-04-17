@@ -15,7 +15,7 @@
 #include "OR1K.h"
 #include "OR1KSubtarget.h"
 #include "OR1KRegisterInfo.h"
-#include "llvm/Support/TargetRegistry.h"
+#include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/MC/MCDisassembler/MCDisassembler.h"
 #include "llvm/MC/MCFixedLenDisassembler.h"
