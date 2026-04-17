@@ -81,18 +81,18 @@ let isCall = 1, hasDelaySlot = 1, Defs = [ R0, PR ]  in {
 def JSR : FM<0x4, 0xB, (outs), (ins GPR:$rm),
              "jsr\t$rm", [ (SuperHCall GPR:$rm) ], NoItinerary>;
 
-def BSR : FD12<0xB, (outs), (ins SuperHCallTarget:$target),
-               "bsr\t$target", [ (SuperHCall tglobaladdr:$target) ], NoItinerary>;
+def BSR : FD12<0xB, (outs), (ins SuperHCallTarget:$disp),
+               "bsr\t$disp", [ (SuperHCall tglobaladdr:$disp) ], NoItinerary>;
 }
 
 let isBranch = 1, isTerminator = 1, hasDelaySlot = 1 in {
-def BRA : FD12<0xA, (outs), (ins SuperHBRATarget:$target),
-               "bra\t$target", [ (br bb:$target) ],
+def BRA : FD12<0xA, (outs), (ins SuperHBRATarget:$disp),
+               "bra\t$disp", [ (br bb:$disp) ],
                NoItinerary>;
 
 let Uses = [ SR ] in {
-def BT : FD<0x89, (outs), (ins SuperHBRATarget:$target),
-            "bt\t$target", [ (brcond SR, bb:$target) ],
+def BT : FD<0x89, (outs), (ins SuperHBRATarget:$disp),
+            "bt\t$disp", [ (brcond SR, bb:$disp) ],
             NoItinerary>;
 }
 }
@@ -121,9 +121,9 @@ def MOV32mr : FNM<0x6, 0x2, (outs GPR:$rn), (ins GPR:$rm),
                   "mov.l\t@$rm, $rn",
                   [ (set i32:$rn, (load i32:$rm)) ], NoItinerary>;
 
-let Constraints = "$rnd = $rns" in {
-def MOV32rmpush : FNM<0x2, 0x6, (outs GPR:$rnd), (ins GPR:$rm, GPR:$rns),
-                     "mov.l\t$rm, @-$rnd",
+let Constraints = "$rn = $rnsrc" in {
+def MOV32rmpush : FNM<0x2, 0x6, (outs GPR:$rn), (ins GPR:$rm, GPR:$rnsrc),
+                     "mov.l\t$rm, @-$rn",
                      [], NoItinerary>;
 }
 }
@@ -139,91 +139,91 @@ def MOV32rm : FNM<0x2, 0x2, (outs), (ins GPR:$rm, GPR:$rn),
                   "mov.l\t$rm, @$rn",
                   [ (store i32:$rm, i32:$rn) ], NoItinerary>;
 
-let Constraints = "$rmd = $rms" in {
-def MOV32mrpop : FNM<0x6, 0x6, (outs GPR:$rn, GPR:$rmd), (ins GPR:$rms),
-                      "mov.l\t@${rmd}+, $rn",
+let Constraints = "$rm = $rmsrc" in {
+def MOV32mrpop : FNM<0x6, 0x6, (outs GPR:$rn, GPR:$rm), (ins GPR:$rmsrc),
+                      "mov.l\t@${rm}+, $rn",
                       [], NoItinerary>;
 }
 }
 
-let Constraints = "$rnd = $rns" in {
+let Constraints = "$rn = $rnsrc" in {
 let isCommutable = 1, isAdd = 1 in {
-def ADDrr : FNM<0x3, 0xC, (outs GPR:$rnd), (ins GPR:$rm, GPR:$rns),
-                "add\t$rm, $rnd",
-                [ (set i32:$rnd, (add i32:$rm, i32:$rns)) ],
+def ADDrr : FNM<0x3, 0xC, (outs GPR:$rn), (ins GPR:$rm, GPR:$rnsrc),
+                "add\t$rm, $rn",
+                [ (set i32:$rn, (add i32:$rm, i32:$rnsrc)) ],
                 NoItinerary>;
 
-def ADDri : FNI<0x7, (outs GPR:$rnd), (ins GPR:$rns, i32imm:$imm),
-                "add\t$imm, $rnd",
-                [ (set i32:$rnd, (add i32:$rns, i32immSExt8:$imm)) ],
+def ADDri : FNI<0x7, (outs GPR:$rn), (ins GPR:$rnsrc, i32imm:$imm),
+                "add\t$imm, $rn",
+                [ (set i32:$rn, (add i32:$rnsrc, i32immSExt8:$imm)) ],
                 NoItinerary>;
 }
 
-def SUBrr : FNM<0x3, 0xB, (outs GPR:$rnd), (ins GPR:$rm, GPR:$rns),
-                "sub\t$rm, $rnd",
-                [ (set i32:$rnd, (sub i32:$rm, i32:$rns)) ],
+def SUBrr : FNM<0x3, 0xB, (outs GPR:$rn), (ins GPR:$rm, GPR:$rnsrc),
+                "sub\t$rm, $rn",
+                [ (set i32:$rn, (sub i32:$rm, i32:$rnsrc)) ],
                 NoItinerary>;
 
-def ANDrr : FNM<0x2, 0x9, (outs GPR:$rnd), (ins GPR:$rm, GPR:$rns),
-                "and\t$rm, $rnd",
-                [ (set i32:$rnd, (and i32:$rm, i32:$rns)) ],
+def ANDrr : FNM<0x2, 0x9, (outs GPR:$rn), (ins GPR:$rm, GPR:$rnsrc),
+                "and\t$rm, $rn",
+                [ (set i32:$rn, (and i32:$rm, i32:$rnsrc)) ],
                 NoItinerary>;
 
-def ORrr : FNM<0x2, 0xB, (outs GPR:$rnd), (ins GPR:$rm, GPR:$rns),
-               "or\t$rm, $rnd",
-               [ (set i32:$rnd, (or i32:$rm, i32:$rns)) ],
+def ORrr : FNM<0x2, 0xB, (outs GPR:$rn), (ins GPR:$rm, GPR:$rnsrc),
+               "or\t$rm, $rn",
+               [ (set i32:$rn, (or i32:$rm, i32:$rnsrc)) ],
                NoItinerary>;
 
-def XORrr : FNM<0x2, 0xA, (outs GPR:$rnd), (ins GPR:$rm, GPR:$rns),
-                "xor\t$rm, $rnd",
-                [ (set i32:$rnd, (xor i32:$rm, i32:$rns)) ],
+def XORrr : FNM<0x2, 0xA, (outs GPR:$rn), (ins GPR:$rm, GPR:$rnsrc),
+                "xor\t$rm, $rn",
+                [ (set i32:$rn, (xor i32:$rm, i32:$rnsrc)) ],
                 NoItinerary>;
 
 let Defs = [ SR ] in {
-def SHAL : FN<0x4, 0x20, (outs GPR:$rnd), (ins GPR:$rns),
-              "shal\t$rnd",
-              [ (set GPR:$rnd, (SuperHShl GPR:$rns, (i32 1))) ],
+def SHAL : FN<0x4, 0x20, (outs GPR:$rn), (ins GPR:$rnsrc),
+              "shal\t$rn",
+              [ (set GPR:$rn, (SuperHShl GPR:$rnsrc, (i32 1))) ],
               NoItinerary>;
 
-def SHAR : FN<0x4, 0x21, (outs GPR:$rnd), (ins GPR:$rns),
-              "shar\t$rnd",
-              [ (set i32:$rnd, (sra i32:$rns, (i32 1))) ],
+def SHAR : FN<0x4, 0x21, (outs GPR:$rn), (ins GPR:$rnsrc),
+              "shar\t$rn",
+              [ (set i32:$rn, (sra i32:$rnsrc, (i32 1))) ],
               NoItinerary>;
 
-def SHLR : FN<0x4, 0x1, (outs GPR:$rnd), (ins GPR:$rns),
-              "shlr\t$rnd",
-              [ (set i32:$rnd, (SuperHSrl i32:$rns, (i32 1))) ],
+def SHLR : FN<0x4, 0x1, (outs GPR:$rn), (ins GPR:$rnsrc),
+              "shlr\t$rn",
+              [ (set i32:$rn, (SuperHSrl i32:$rnsrc, (i32 1))) ],
               NoItinerary>;
 }
 
-def SHLL2 : FN<0x4, 0x8, (outs GPR:$rnd), (ins GPR:$rns),
-              "shll2\t$rnd",
-              [ (set i32:$rnd, (SuperHShl i32:$rns, (i32 2))) ],
+def SHLL2 : FN<0x4, 0x8, (outs GPR:$rn), (ins GPR:$rnsrc),
+              "shll2\t$rn",
+              [ (set i32:$rn, (SuperHShl i32:$rnsrc, (i32 2))) ],
               NoItinerary>;
 
-def SHLL8 : FN<0x4, 0x18, (outs GPR:$rnd), (ins GPR:$rns),
-              "shll8\t$rnd",
-              [ (set i32:$rnd, (SuperHShl i32:$rns, (i32 8))) ],
+def SHLL8 : FN<0x4, 0x18, (outs GPR:$rn), (ins GPR:$rnsrc),
+              "shll8\t$rn",
+              [ (set i32:$rn, (SuperHShl i32:$rnsrc, (i32 8))) ],
               NoItinerary>;
 
-def SHLL16 : FN<0x4, 0x28, (outs GPR:$rnd), (ins GPR:$rns),
-               "shll16\t$rnd",
-               [ (set i32:$rnd, (SuperHShl i32:$rns, (i32 16))) ],
+def SHLL16 : FN<0x4, 0x28, (outs GPR:$rn), (ins GPR:$rnsrc),
+               "shll16\t$rn",
+               [ (set i32:$rn, (SuperHShl i32:$rnsrc, (i32 16))) ],
                NoItinerary>;
 
-def SHLR2 : FN<0x4, 0x9, (outs GPR:$rnd), (ins GPR:$rns),
-              "shlr2\t$rnd",
-              [ (set i32:$rnd, (SuperHSrl i32:$rns, (i32 2))) ],
+def SHLR2 : FN<0x4, 0x9, (outs GPR:$rn), (ins GPR:$rnsrc),
+              "shlr2\t$rn",
+              [ (set i32:$rn, (SuperHSrl i32:$rnsrc, (i32 2))) ],
               NoItinerary>;
 
-def SHLR8 : FN<0x4, 0x19, (outs GPR:$rnd), (ins GPR:$rns),
-              "shlr8\t$rnd",
-              [ (set i32:$rnd, (SuperHSrl i32:$rns, (i32 8))) ],
+def SHLR8 : FN<0x4, 0x19, (outs GPR:$rn), (ins GPR:$rnsrc),
+              "shlr8\t$rn",
+              [ (set i32:$rn, (SuperHSrl i32:$rnsrc, (i32 8))) ],
               NoItinerary>;
 
-def SHLR16 : FN<0x4, 0x29, (outs GPR:$rnd), (ins GPR:$rns),
-               "shlr16\t$rnd",
-               [ (set i32:$rnd, (SuperHSrl i32:$rns, (i32 16))) ],
+def SHLR16 : FN<0x4, 0x29, (outs GPR:$rn), (ins GPR:$rnsrc),
+               "shlr16\t$rn",
+               [ (set i32:$rn, (SuperHSrl i32:$rnsrc, (i32 16))) ],
                NoItinerary>;
 }
 
@@ -232,7 +232,7 @@ def : Pat<(i32 (SuperHSrl i32:$rn, (i32 0))), (i32 $rn)>;
 def : Pat<(i32 (SuperHShl i32:$rn, (i32 0))), (i32 $rn)>;
 
 let Defs = [ R0 ], Uses = [ R0 ] in {
-def ANDri : FN<0xC, 0x8, (outs), (ins i32imm:$imm),
+def ANDri : FI<0xC8, (outs), (ins i32imm:$imm),
                "and\t$imm, r0",
                [ (set R0, (and R0, i32immSExt8:$imm)) ],
                NoItinerary>;
@@ -240,7 +240,7 @@ def ORri : FI<0xCB, (outs), (ins i32imm:$imm),
               "or\t$imm, r0",
               [ (set R0, (or R0, i32immSExt8:$imm)) ],
               NoItinerary>;
-def XORri : FN<0xC, 0xA, (outs), (ins i32imm:$imm),
+def XORri : FI<0xCA, (outs), (ins i32imm:$imm),
               "xor\t$imm, r0",
               [ (set R0, (xor R0, i32immSExt8:$imm)) ],
               NoItinerary>;
@@ -260,8 +260,8 @@ class ST<string type, bits<8> data, string regname, Register reg>
 }
 
 class LD<string type, bits<8> data, string regname, Register reg>
-  : FN<0x4, data, (outs), (ins GPR:$rm),
-       "ld"#type#"\t$rm, "#regname, [], NoItinerary> {
+  : FN<0x4, data, (outs), (ins GPR:$rn),
+       "ld"#type#"\t$rn, "#regname, [], NoItinerary> {
          let Uses = [ reg ];
 }
 
@@ -279,51 +279,58 @@ def LDSPR : LD<"s", 0x2A, "pr", PR>;
 
 // Program Counter????
 
-// Status Register????
-def STCSR : ST<"c", 0x2A, "sr", SR>;
-def LDCSR : LD<"c", 0x2A, "sr", SR>;
+// Status Register
+// STC SR, Rn: 0000 nnnn 0000 0010
+def STCSR : ST<"c", 0x02, "sr", SR>;
+// LDC Rm, SR: 0100 mmmm 0000 1110
+def LDCSR : LD<"c", 0x0E, "sr", SR>;
 
 // Global Base Register
+// STC GBR, Rn: 0000 nnnn 0001 0010
 def STCGBR : ST<"c", 0x12, "gbr", GBR>;
-def LDCGBR : LD<"c", 0x12, "gbr", GBR>;
+// LDC Rm, GBR: 0100 mmmm 0001 1110
+def LDCGBR : LD<"c", 0x1E, "gbr", GBR>;
 
 // Vector Base Register
+// STC VBR, Rn: 0000 nnnn 0010 0010
 def STCVBR : ST<"c", 0x22, "vbr", VBR>;
-def LDCVBR : LD<"c", 0x22, "vbr", VBR>;
+// LDC Rm, VBR: 0100 mmmm 0010 1110
+def LDCVBR : LD<"c", 0x2E, "vbr", VBR>;
 
 let mayLoad = 1 in {
 let Defs = [ R0 ] in {
-def MOV8mr0 : FMD<0x84, (outs), (ins SuperHMemOperand:$addr),
-                  "mov.b\t@$addr, r0",
-                  [ (set R0, (sextloadi8 SuperHMemPattern8:$addr)) ],
+def MOV8mr0 : FMD<0x84, (outs), (ins GPR:$rm, i32imm:$disp),
+                  "mov.b\t@($disp, $rm), r0",
+                  [ (set R0, (sextloadi8 (SuperHMemPattern8 GPR:$rm, i32imm:$disp))) ],
                   NoItinerary>;
-def MOV16mr0 : FMD<0x85, (outs), (ins SuperHMemOperand:$addr),
-                  "mov.w\t@$addr, r0",
-                  [ (set R0, (sextloadi16 SuperHMemPattern16:$addr)) ],
+def MOV16mr0 : FMD<0x85, (outs), (ins GPR:$rm, i32imm:$disp),
+                  "mov.w\t@($disp, $rm), r0",
+                  [ (set R0, (sextloadi16 (SuperHMemPattern16 GPR:$rm, i32imm:$disp))) ],
                   NoItinerary>;
 }
 
-def MOV32mrd : FNMD<0x5, (outs GPR:$rn), (ins SuperHMemOperand:$addr),
-                    "mov.l\t@$addr, $rn",
-                    [ (set i32:$rn, (load SuperHMemPattern32:$addr)) ],
+def MOV32mrd : FNMD<0x5, (outs GPR:$rn), (ins GPR:$rm, i32imm:$disp),
+                    "mov.l\t@($disp, $rm), $rn",
+                    [ (set i32:$rn, (load (SuperHMemPattern32 GPR:$rm, i32imm:$disp))) ],
                     NoItinerary>;
 }
 
 let mayStore = 1 in {
 let Uses = [ R0 ] in {
-def MOV8r0m : FMD<0x80, (outs), (ins SuperHMemOperand:$addr),
-                   "mov.b\tr0, @$addr",
-                   [ (truncstorei8 R0, SuperHMemPattern8:$addr) ],
+def MOV8r0m : FMD<0x80, (outs), (ins GPR:$rm, i32imm:$disp),
+                   "mov.b\tr0, @($disp, $rm)",
+                   [ (truncstorei8 R0, (SuperHMemPattern8 GPR:$rm, i32imm:$disp)) ],
                    NoItinerary>;
-def MOV16r0m : FMD<0x81, (outs), (ins SuperHMemOperand:$addr),
-                   "mov.w\tr0, @$addr",
-                   [ (truncstorei16 R0, SuperHMemPattern16:$addr) ],
+def MOV16r0m : FMD<0x81, (outs), (ins GPR:$rm, i32imm:$disp),
+                   "mov.w\tr0, @($disp, $rm)",
+                   [ (truncstorei16 R0, (SuperHMemPattern16 GPR:$rm, i32imm:$disp)) ],
                    NoItinerary>;
 }
 
-def MOV32rmd : FNMD<0x1, (outs), (ins GPR:$rm, SuperHMemOperand:$addr),
-                    "mov.l\t$rm, @$addr",
-                    [ (store i32:$rm, SuperHMemPattern32:$addr) ],
+// MOV.L Rm, @(disp, Rn): operand order matches FNMD fields rn(base), disp, rm(data)
+def MOV32rmd : FNMD<0x1, (outs), (ins GPR:$rn, i32imm:$disp, GPR:$rm),
+                    "mov.l\t$rm, @($disp, $rn)",
+                    [ (store i32:$rm, (SuperHMemPattern32 GPR:$rn, i32imm:$disp)) ],
                     NoItinerary>;
 }
 
@@ -336,9 +343,9 @@ def MULrr : FNM<0x0, 0x7, (outs), (ins GPR:$rm, GPR:$rn),
 }
 
 let Uses = [ R0 ] in {
-def MULrr0 : FN<0x4, 0x80, (outs GPR:$rnd), (ins GPR:$rns),
-               "mulr\tr0, $rnd",
-               [ (set i32:$rnd, (mul R0, i32:$rns)) ],
+def MULrr0 : FN<0x4, 0x80, (outs GPR:$rn), (ins GPR:$rnsrc),
+               "mulr\tr0, $rn",
+               [ (set i32:$rn, (mul R0, i32:$rnsrc)) ],
                NoItinerary>;
 }
 }
@@ -348,8 +355,8 @@ def : Pat<(i32 (mulhu i32:$rm, i32:$rn)),
 
 
 let Uses = [ PC ] in {
-def MOV32PCR : FND8<0xD, (outs GPR:$rn), (ins i32imm:$addr),
-                    "mov.l\t@($addr, pc), $rn",
+def MOV32PCR : FND8<0xD, (outs GPR:$rn), (ins i32imm:$disp),
+                    "mov.l\t@($disp, pc), $rn",
                     [],
                     NoItinerary>;
 }
@@ -357,6 +364,8 @@ def MOV32PCR : FND8<0xD, (outs GPR:$rn), (ins i32imm:$addr),
 def : Pat<(load (SuperHWrapper tconstpool:$src)), (MOV32PCR tconstpool:$src)>;
 
 def : Pat<(SuperHWrapper tglobaladdr:$src), (MOV32PCR tconstpool:$src)>;
+
+// Memory load/store patterns are embedded in instruction definitions above.
 
 let isCompare = 1, Defs = [ SR ] in { // Sets the T bit
 class CMP<bits<4> op, bits<4> data, string asmstr, CondCode CC>

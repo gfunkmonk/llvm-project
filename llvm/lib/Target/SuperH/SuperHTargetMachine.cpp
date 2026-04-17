@@ -52,8 +52,8 @@ static std::string computeDataLayout() {
   return Ret;
 }
 
-static Reloc::Model getEffectiveRelocModel(Optional<CodeModel::Model> CM,
-                                           Optional<Reloc::Model> RM) {
+static Reloc::Model getEffectiveRelocModel(std::optional<CodeModel::Model> CM,
+                                           std::optional<Reloc::Model> RM) {
   if (!RM.has_value())
     return Reloc::Static;
   return *RM;
@@ -62,9 +62,9 @@ static Reloc::Model getEffectiveRelocModel(Optional<CodeModel::Model> CM,
 SuperHTargetMachine::SuperHTargetMachine(const Target &T, const Triple &TT,
                                        StringRef CPU, StringRef FS,
                                        const TargetOptions &Options,
-                                       Optional<Reloc::Model> RM,
-                                       Optional<CodeModel::Model> CM,
-                                       CodeGenOpt::Level OL,
+                                       std::optional<Reloc::Model> RM,
+                                       std::optional<CodeModel::Model> CM,
+                                       CodeGenOptLevel OL,
                                        bool JIT)
     : LLVMTargetMachine(T, computeDataLayout(), TT, CPU, FS, Options,
                         getEffectiveRelocModel(CM, RM),
