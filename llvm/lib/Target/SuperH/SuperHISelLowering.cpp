@@ -342,7 +342,7 @@ void SuperHTargetLowering::HandleByVal(CCState *State, unsigned &Size,
   // all remained GPR regs. In that case we can't split parameter, we must
   // send it to stack. We also must set NCRN to X4, so waste all
   // remained registers.
-  const unsigned NSAAOffset = State->getNextStackOffset();
+  const unsigned NSAAOffset = State->getStackSize();
   if (NSAAOffset != 0 && Size > Excess) {
     while (State->AllocateReg(GPRArgRegs))
       ;

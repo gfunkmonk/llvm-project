@@ -36,8 +36,9 @@ SuperHInstrInfo::SuperHInstrInfo(const SuperHSubtarget &STI)
 
 void SuperHInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
                               MachineBasicBlock::iterator MI,
-                              const DebugLoc &DL, MCRegister DestReg,
-                              MCRegister SrcReg, bool KillSrc) const {
+                              const DebugLoc &DL, Register DestReg,
+                              Register SrcReg, bool KillSrc,
+                              bool RenamableDest, bool RenamableSrc) const {
   unsigned Opc = SuperH::MOV32rr;
 
   printf("Checking to see if all regs are GP\n");
@@ -93,7 +94,9 @@ void SuperHInstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
                                       Register SrcReg, bool isKill,
                                       int FrameIndex,
                                       const TargetRegisterClass *RC,
-                                      const TargetRegisterInfo *TRI) const {
+                                      const TargetRegisterInfo *TRI,
+                                      Register VReg,
+                                      MachineInstr::MIFlag Flags) const {
   DebugLoc DL = MI != MBB.end() ? MI->getDebugLoc() : DebugLoc();
 
   BuildMI(MBB, MI, DL, get(SuperH::MOV32rm))
@@ -105,7 +108,9 @@ void SuperHInstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
                                        MachineBasicBlock::iterator MI,
                                        Register DstReg, int FrameIndex,
                                        const TargetRegisterClass *RC,
-                                       const TargetRegisterInfo *TRI) const {
+                                       const TargetRegisterInfo *TRI,
+                                       Register VReg,
+                                       MachineInstr::MIFlag Flags) const {
   DebugLoc DL = MI != MBB.end() ? MI->getDebugLoc() : DebugLoc();
 
   BuildMI(MBB, MI, DL, get(SuperH::MOV32mr), DstReg).addFrameIndex(FrameIndex);
