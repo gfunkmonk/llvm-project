@@ -166,7 +166,8 @@ SDValue SuperHTargetLowering::LowerFormalArguments(
 bool SuperHTargetLowering::CanLowerReturn(CallingConv::ID CallConv,
                                 MachineFunction &MF, bool isVarArg,
                                 const SmallVectorImpl<ISD::OutputArg> &Outs,
-                                LLVMContext &Context) const
+                                LLVMContext &Context,
+                                const Type *RetTy) const
 {
   // SmallVector<CCValAssign, 16> RVLocs;
   // CCState CCInfo(CallConv, isVarArg, MF, RVLocs, Context);
@@ -433,7 +434,7 @@ LowerGlobalAddress(SDValue Op, SelectionDAG &DAG) const {
   CP = DAG.getNode(SuperHISD::Wrapper, DL, MVT::i32, CP);
 
   return DAG.getLoad(PtrVT, DL, DAG.getEntryNode(), CP,
-                     MachinePointerInfo::getConstantPool(MF), 4);
+                     MachinePointerInfo::getConstantPool(MF), Align(4));
 }
 
 SDValue SuperHTargetLowering::
