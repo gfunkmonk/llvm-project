@@ -16,6 +16,7 @@
 #include "SuperHSubtarget.h"
 #include "SuperHTargetObjectFile.h"
 #include "TargetInfo/SuperHTargetInfo.h"
+#include "llvm/CodeGen/CodeGenTargetMachineImpl.h"
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/CodeGen/TargetPassConfig.h"
 #include "llvm/MC/TargetRegistry.h"
@@ -66,7 +67,7 @@ SuperHTargetMachine::SuperHTargetMachine(const Target &T, const Triple &TT,
                                        std::optional<CodeModel::Model> CM,
                                        CodeGenOptLevel OL,
                                        bool JIT)
-    : LLVMTargetMachine(T, computeDataLayout(), TT, CPU, FS, Options,
+    : CodeGenTargetMachineImpl(T, computeDataLayout(), TT, CPU, FS, Options,
                         getEffectiveRelocModel(CM, RM),
                         getEffectiveCodeModel(CM, CodeModel::Medium), OL),
       TLOF(std::make_unique<SuperHTargetObjectFile>()) {

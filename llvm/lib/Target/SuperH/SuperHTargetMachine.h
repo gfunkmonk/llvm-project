@@ -15,13 +15,14 @@
 #define LLVM_LIB_TARGET_SUPERH_SUPERHTARGETMACHINE_H
 
 #include "SuperHSubtarget.h"
+#include "llvm/CodeGen/CodeGenTargetMachineImpl.h"
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/CodeGen/SelectionDAGISel.h"
 #include "llvm/CodeGen/TargetFrameLowering.h"
 #include "llvm/Target/TargetMachine.h"
 
 namespace llvm {
-class SuperHTargetMachine : public LLVMTargetMachine {
+class SuperHTargetMachine : public CodeGenTargetMachineImpl {
   std::unique_ptr<TargetLoweringObjectFile> TLOF;
   mutable StringMap<std::unique_ptr<SuperHSubtarget>> SubtargetMap;
 

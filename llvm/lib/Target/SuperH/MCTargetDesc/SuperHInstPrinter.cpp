@@ -29,8 +29,8 @@ void SuperHInstPrinter::printInst(const MCInst *MI, uint64_t Address, StringRef 
   printInstruction(MI, Address, O);
 }
 
-void SuperHInstPrinter::printRegName(raw_ostream &OS, unsigned RegNo) const {
-  OS << '%' << StringRef(getRegisterName(RegNo)).lower();
+void SuperHInstPrinter::printRegName(raw_ostream &OS, MCRegister Reg) {
+  OS << '%' << StringRef(getRegisterName(Reg)).lower();
 }
 
 void SuperHInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
