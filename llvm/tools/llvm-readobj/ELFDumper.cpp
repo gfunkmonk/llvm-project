@@ -6996,9 +6996,10 @@ void GNUELFDumper<ELFT>::printMipsGOT(const MipsGOTParser<ELFT> &Parser) {
 
     DataRegion<Elf_Word> ShndxTable(
         (const Elf_Word *)this->DynSymTabShndxRegion.Addr, this->Obj.end());
+    Elf_Sym_Range DynSyms = this->dynamic_symbols();
     for (auto &E : Parser.getGlobalEntries()) {
       const Elf_Sym &Sym = *Parser.getGotSym(&E);
-      const Elf_Sym &FirstSym = this->dynamic_symbols()[0];
+      const Elf_Sym &FirstSym = DynSyms[0];
       std::string SymName = this->getFullSymbolName(
           Sym, &Sym - &FirstSym, ShndxTable, this->DynamicStringTable, false);
 
@@ -7013,7 +7014,7 @@ void GNUELFDumper<ELFT>::printMipsGOT(const MipsGOTParser<ELFT> &Parser) {
       OS.PadToColumn(40 + 3 * Bias);
       OS << enumToString(Sym.getType(), ArrayRef(ElfSymbolTypes));
       OS.PadToColumn(48 + 3 * Bias);
-      OS << getSymbolSectionNdx(Sym, &Sym - this->dynamic_symbols().begin(),
+      OS << getSymbolSectionNdx(Sym, &Sym - DynSyms.begin(),
                                 ShndxTable);
       OS.PadToColumn(52 + 3 * Bias);
       OS << SymName << "\n";
