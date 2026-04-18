@@ -68,7 +68,7 @@ bool SuperHRegisterInfo::isCalleeSavedIndex(int FrameIdx,
          FrameIdx <= CSI.back().getFrameIdx();
 }
 
-void SuperHRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
+bool SuperHRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
                                            int SPAdj,
                                            unsigned FIOperandNum,
                                            RegScavenger *RS) const {
@@ -84,6 +84,7 @@ void SuperHRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
 
   MI.getOperand(FIOperandNum).ChangeToRegister(BaseReg, false);
   // FIXME: Callee saved registers.
+  return false;
 }
 
 bool
