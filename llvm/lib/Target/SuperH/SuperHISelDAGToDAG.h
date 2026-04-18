@@ -25,7 +25,7 @@ public:
       : SelectionDAGISel(TM, OL), Subtarget(nullptr) {}
 
   // Pass Name
-  StringRef getPassName() const override {
+  StringRef getPassName() const {
     return "SuperH DAG->DAG Pattern Instruction Selection";
   }
 
