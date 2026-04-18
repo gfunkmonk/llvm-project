@@ -62,8 +62,8 @@ bool SuperHDAGToDAGISel::SelectAddr(SDValue Addr, SDValue &Base, SDValue &Offset
   if (Addr->use_size() != 1)
     return false;
 
-  auto *Use = *Addr->use_begin();
-  auto Opcode = Use->getOpcode();
+  auto &Use = *Addr->use_begin();
+  auto Opcode = Use.getUser()->getOpcode();
   if (!(Opcode == ISD::LOAD || Opcode == ISD::STORE))
     return false;
 
