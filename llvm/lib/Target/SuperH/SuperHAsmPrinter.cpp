@@ -20,6 +20,7 @@
 #include "llvm/CodeGen/MachineInstr.h"
 #include "llvm/CodeGen/MachineOperand.h"
 #include "llvm/MC/MCInst.h"
+#include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/TargetRegistry.h"
@@ -41,13 +42,8 @@ public:
 
   void emitInstruction(const MachineInstr *MI) override;
 
-  // This function must be present as it is internally used by the
-  // auto-generated function emitPseudoExpansionLowering to expand pseudo
-  // instruction
-  void EmitToStreamer(MCStreamer &S, const MCInst &Inst);
   // Auto-generated function in SuperHGenMCPseudoLowering.inc
-  bool emitPseudoExpansionLowering(MCStreamer &OutStreamer,
-                                   const MachineInstr *MI);
+  bool lowerPseudoInstExpansion(const MachineInstr *MI, MCInst &Inst);
 
 private:
   void LowerInstruction(const MachineInstr *MI, MCInst &OutMI) const;
@@ -59,14 +55,13 @@ private:
 // Simple pseudo-instructions have their lowering (with expansion to real
 // instructions) auto-generated.
 #include "SuperHGenMCPseudoLowering.inc"
-void SuperHAsmPrinter::EmitToStreamer(MCStreamer &S, const MCInst &Inst) {
-  AsmPrinter::EmitToStreamer(*OutStreamer, Inst);
-}
 
 void SuperHAsmPrinter::emitInstruction(const MachineInstr *MI) {
   // Do any auto-generated pseudo lowerings.
-  if (emitPseudoExpansionLowering(*OutStreamer, MI))
+  if (MCInst OutInst; lowerPseudoInstExpansion(MI, OutInst)) {
+    EmitToStreamer(*OutStreamer, OutInst);
     return;
+  }
 
   MCInst TmpInst;
   LowerInstruction(MI, TmpInst);
@@ -125,8 +120,7 @@ MCOperand SuperHAsmPrinter::LowerSymbolOperand(const MachineOperand &MO,
                                               MCSymbol *Sym) const {
   MCContext &Ctx = OutContext;
 
-  const MCExpr *Expr =
-    MCSymbolRefExpr::create(Sym, MCSymbolRefExpr::VK_None, Ctx);
+  const MCExpr *Expr = MCSymbolRefExpr::create(Sym, Ctx);
 
   if (!MO.isJTI() && !MO.isMBB() && MO.getOffset())
     Expr = MCBinaryExpr::createAdd(
